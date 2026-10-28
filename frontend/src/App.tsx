@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ChatPage from "./pages/ChatPage";
 
 type View = "chat" | "projects" | "rag" | "vision";
 
@@ -82,7 +83,7 @@ export default function App() {
 
       {/* Main content */}
       <main style={{ flex: 1, overflow: "auto", position: "relative" }}>
-        {view === "chat"     && <Placeholder label="Chat multi-LLM" />}
+        {view === "chat"     && <ChatPage />}
         {view === "projects" && <Placeholder label="Projetos" />}
         {view === "rag"      && <Placeholder label="Memória / RAG" />}
         {view === "vision"   && <Placeholder label="Visão Computacional" />}
