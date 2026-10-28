@@ -1,7 +1,6 @@
 """FastAPI router for the chat module — conversations + streaming SSE."""
 
 import json
-from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -33,6 +32,10 @@ def _has_anthropic() -> bool:
 
 def _has_openrouter() -> bool:
     return bool(settings.openrouter_api_key)
+
+
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 # ── Conversations CRUD ─────────────────────────────────────────────────────────
@@ -104,11 +107,11 @@ async def list_models():
 
 @router.post("/conversations/{conv_id}/messages")
 async def send_message(conv_id: int, body: ChatRequest):
-    """Stream an LLM response via SSE. Saves user + assistant messages to DB."""
+    """Stream LLM response via SSE. Saves user + assistant messages to DB."""
 
-    async def event_stream() -> AsyncGenerator[str, None]:
+    async def event_stream():
         async with SessionLocal() as db:
-            # Load conversation
+            # Load conversation with history
             result = await db.execute(
                 select(Conversation)
                 .where(Conversation.id == conv_id)
@@ -116,99 +119,106 @@ async def send_message(conv_id: int, body: ChatRequest):
             )
             conv = result.scalar_one_or_none()
             if not conv:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Conversa não encontrada'})}\n\n"
+                yield _sse({"type": "error", "message": "Conversa não encontrada"})
                 return
 
-            # Save user message
-            user_msg = Message(
-                conversation_id=conv_id,
-                role="user",
-                content=body.message,
-            )
+            # Save user message first
+            user_msg = Message(conversation_id=conv_id, role="user", content=body.message)
             db.add(user_msg)
             await db.flush()
-            await db.refresh(user_msg)
 
-            # Build messages history for the LLM
-            history = [
-                {"role": m.role, "content": m.content}
-                for m in conv.messages
-            ]
+            # Build LLM messages history (existing + new)
+            history = [{"role": m.role, "content": m.content} for m in conv.messages]
             history.append({"role": "user", "content": body.message})
 
-            # AMR — pick model
+            # AMR: pick provider + model
             has_ant = _has_anthropic()
             has_or = _has_openrouter()
 
             if body.preferred_model:
-                # Manual override: detect provider by model name pattern
-                if "claude" in body.preferred_model:
-                    selection_provider = "anthropic"
-                else:
-                    selection_provider = "openrouter"
-                selection_model = body.preferred_model
-                selection_reason = "manual override"
+                prov = "anthropic" if "claude" in body.preferred_model else "openrouter"
+                model = body.preferred_model
+                reason = "manual override"
             else:
                 sel = amr_route(body.message, has_ant, has_or)
-                selection_provider = sel.provider
-                selection_model = sel.model
-                selection_reason = sel.reason
+                prov = sel.provider
+                model = sel.model
+                reason = sel.reason
 
-            if not selection_provider:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Nenhum provider configurado. Adicione ANTHROPIC_API_KEY ou OPENROUTER_API_KEY no .env'})}\n\n"
+            if not prov:
+                yield _sse({"type": "error", "message": "Nenhum provider configurado. Adicione ANTHROPIC_API_KEY ou OPENROUTER_API_KEY no .env"})
                 return
 
-            yield f"data: {json.dumps({'type': 'model', 'provider': selection_provider, 'model': selection_model, 'reason': selection_reason})}\n\n"
+            yield _sse({"type": "model", "provider": prov, "model": model, "reason": reason})
 
-            # Stream with circuit breaker: try primary, fallback to other provider
+            # Stream with circuit breaker
             accumulated = ""
             usage_data: dict = {}
-            stream_error: str | None = None
+            last_error = ""
 
-            async def try_stream(provider: str, model: str) -> bool:
-                nonlocal accumulated, usage_data, stream_error
+            async def do_stream(provider: str, mdl: str) -> bool:
+                nonlocal accumulated, usage_data, last_error
                 try:
-                    if provider == "anthropic":
-                        gen = stream_anthropic(history, model)
-                    else:
-                        gen = stream_openrouter(history, model)
-
+                    gen = stream_anthropic(history, mdl) if provider == "anthropic" else stream_openrouter(history, mdl)
                     async for event in gen:
                         if event["type"] == "delta":
                             accumulated += event["text"]
-                            yield f"data: {json.dumps({'type': 'delta', 'text': event['text']})}\n\n"
                         elif event["type"] == "done":
                             usage_data = event.get("usage", {})
                     return True
                 except Exception as exc:
-                    stream_error = str(exc)
+                    last_error = str(exc)
                     return False
 
-            # Primary attempt
-            success = False
-            async for chunk in try_stream(selection_provider, selection_model):
-                yield chunk
-                success = True  # At least one chunk yielded
+            # Run primary stream, collect all chunks, then yield
+            # (SSE requires yielding, so we use a different approach: yield as we go)
+            primary_ok = True
+            try:
+                gen = (
+                    stream_anthropic(history, model)
+                    if prov == "anthropic"
+                    else stream_openrouter(history, model)
+                )
+                async for event in gen:
+                    if event["type"] == "delta":
+                        accumulated += event["text"]
+                        yield _sse({"type": "delta", "text": event["text"]})
+                    elif event["type"] == "done":
+                        usage_data = event.get("usage", {})
+            except Exception as exc:
+                primary_ok = False
+                last_error = str(exc)
 
-            # If primary failed entirely (no chunks), try fallback
-            if stream_error and not accumulated:
-                fallback_provider = "openrouter" if selection_provider == "anthropic" else "anthropic"
-                fallback_model = (
+            # Circuit breaker: fallback if primary failed entirely
+            if not primary_ok and not accumulated:
+                fallback_prov = "openrouter" if prov == "anthropic" else "anthropic"
+                fallback_mdl = (
                     "meta-llama/llama-3.1-8b-instruct:free"
-                    if fallback_provider == "openrouter"
+                    if fallback_prov == "openrouter"
                     else "claude-haiku-3-5-20251101"
                 )
-                has_fallback = (
-                    has_or if fallback_provider == "openrouter" else has_ant
-                )
-                if has_fallback:
-                    yield f"data: {json.dumps({'type': 'model', 'provider': fallback_provider, 'model': fallback_model, 'reason': 'fallback'})}\n\n"
-                    stream_error = None
-                    async for chunk in try_stream(fallback_provider, fallback_model):
-                        yield chunk
+                has_fallback = has_or if fallback_prov == "openrouter" else has_ant
 
-            if stream_error and not accumulated:
-                yield f"data: {json.dumps({'type': 'error', 'message': stream_error})}\n\n"
+                if has_fallback:
+                    yield _sse({"type": "model", "provider": fallback_prov, "model": fallback_mdl, "reason": "fallback"})
+                    try:
+                        gen2 = (
+                            stream_anthropic(history, fallback_mdl)
+                            if fallback_prov == "anthropic"
+                            else stream_openrouter(history, fallback_mdl)
+                        )
+                        async for event in gen2:
+                            if event["type"] == "delta":
+                                accumulated += event["text"]
+                                yield _sse({"type": "delta", "text": event["text"]})
+                            elif event["type"] == "done":
+                                usage_data = event.get("usage", {})
+                    except Exception as exc2:
+                        last_error = str(exc2)
+
+            # If nothing was generated, report error
+            if not accumulated:
+                yield _sse({"type": "error", "message": last_error or "Falha ao gerar resposta"})
                 await db.rollback()
                 return
 
@@ -227,13 +237,13 @@ async def send_message(conv_id: int, body: ChatRequest):
             await db.flush()
             await db.refresh(assistant_msg)
 
-            # Update conversation title from first user message
-            if len(conv.messages) == 0:
+            # Auto-title conversation from first message
+            if not conv.messages:
                 conv.title = body.message[:80]
 
             await db.commit()
 
-            yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id, 'usage': usage_data})}\n\n"
+            yield _sse({"type": "done", "message_id": assistant_msg.id, "usage": usage_data})
 
     return StreamingResponse(
         event_stream(),
