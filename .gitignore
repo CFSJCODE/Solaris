@@ -1,0 +1,32 @@
+# ── Python ─────────────────────────────────────────────
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/.env
+
+# ── Node / Frontend ─────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+
+# ── Rust / Tauri ────────────────────────────────────────
+src-tauri/target/
+
+# ── Modelos e armazenamento (não commitar binários grandes) ──
+models/
+storage/
+
+# ── Sistema operacional ──────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDEs ────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# ── Logs ────────────────────────────────────────────────
+*.log
+logs/

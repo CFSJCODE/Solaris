@@ -1,0 +1,122 @@
+/* SOLARIS Design System v1.0
+   Sunset Spectrum / Intelligent Depth / Responsive Liquid
+   Paleta: Ember #EA6113 · Flare #F88F22 · Gold #FBB931 · Glow #FFE3B3 */
+
+/* ── Reset mínimo ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens: modo escuro (default) ───────────────────── */
+:root, [data-theme="dark"] {
+  /* Sunset palette */
+  --sol-ember: #EA6113;
+  --sol-flare: #F88F22;
+  --sol-gold:  #FBB931;
+  --sol-glow:  #FFE3B3;
+  --sol-sunset: linear-gradient(105deg, var(--sol-ember) 0%, var(--sol-flare) 33%, var(--sol-gold) 67%, var(--sol-glow) 100%);
+
+  /* Ink (fundos escuros) */
+  --sol-ink-950: #0B0D12;
+  --sol-ink-900: #11141B;
+  --sol-ink-850: #171B25;
+  --sol-ink-800: #202632;
+
+  /* Superfícies */
+  --sol-bg:          #0B0D12;
+  --sol-surface:     #171B25;
+  --sol-text:        #F9F8F6;
+  --sol-text-muted:  #C1C4CB;
+  --sol-border:      rgba(255,255,255,.14);
+  --sol-reading:     rgba(23,27,37,.96);
+  --sol-optical-tint: rgba(24,25,34,.20);
+
+  /* Status */
+  --sol-success: #37BE91;
+  --sol-warning: #F5BD54;
+  --sol-error:   #FF7776;
+  --sol-info:    #7EAFFF;
+
+  /* Raios */
+  --sol-radius-sm:       8px;
+  --sol-radius-md:       12px;
+  --sol-radius-lg:       16px;
+  --sol-radius-xl:       20px;
+  --sol-radius-composer: 28px;
+  --sol-radius-pill:     999px;
+
+  /* Espaçamento (escala de 4px) */
+  --sol-space-1:  4px;
+  --sol-space-2:  8px;
+  --sol-space-3:  12px;
+  --sol-space-4:  16px;
+  --sol-space-5:  20px;
+  --sol-space-6:  24px;
+  --sol-space-8:  32px;
+  --sol-space-10: 40px;
+  --sol-space-12: 48px;
+
+  /* Motion */
+  --sol-dur-instant:    80ms;
+  --sol-dur-quick:      150ms;
+  --sol-dur-std:        240ms;
+  --sol-dur-expressive: 360ms;
+  --sol-dur-spatial:    520ms;
+  --sol-ease-out:       cubic-bezier(.16,1,.3,1);
+  --sol-ease-in-out:    cubic-bezier(.65,0,.35,1);
+
+  /* Tipografia */
+  --sol-font-ui:   "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
+  --sol-font-mono: "Cascadia Code", Consolas, ui-monospace, monospace;
+
+  color-scheme: dark;
+}
+
+/* ── Tokens: modo claro ───────────────────────────────── */
+[data-theme="light"] {
+  --sol-bg:           #FFFCF8;
+  --sol-surface:      #F8F5F0;
+  --sol-text:         #20170F;
+  --sol-text-muted:   #625E59;
+  --sol-border:       rgba(30,25,20,.16);
+  --sol-reading:      rgba(255,252,248,.98);
+  --sol-optical-tint: rgba(255,252,247,.54);
+  color-scheme: light;
+}
+
+/* ── Base ─────────────────────────────────────────────── */
+html, body {
+  height: 100%;
+  font-family: var(--sol-font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sol-text);
+  background: var(--sol-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root { height: 100%; display: flex; flex-direction: column; }
+
+/* ── Utilitários de superfície ───────────────────────── */
+.sol-sunset-gradient  { background: var(--sol-sunset); color: #0B0D12; }
+.sol-reading-surface  { background: var(--sol-reading); color: var(--sol-text); border: 1px solid var(--sol-border); border-radius: var(--sol-radius-lg); }
+.sol-optical-surface  { position: relative; isolation: isolate; background: var(--sol-optical-tint); color: var(--sol-text); border: 1px solid var(--sol-border); border-radius: var(--sol-radius-xl); }
+
+/* ── Focus ────────────────────────────────────────────── */
+.sol-focusable:focus-visible { outline: 2px solid var(--sol-gold); outline-offset: 3px; }
+
+/* ── Transições globais ───────────────────────────────── */
+.sol-transition { transition: transform var(--sol-dur-std) var(--sol-ease-out), background-color var(--sol-dur-std), border-color var(--sol-dur-std), opacity var(--sol-dur-std); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sol-transition { transition-duration: .01ms; animation: none; }
+}
+
+@media (forced-colors: active) {
+  .sol-reading-surface, .sol-optical-surface { color: CanvasText; background: Canvas; border-color: CanvasText; }
+}
+
+/* ── Scrollbar mínima ─────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--sol-border); border-radius: var(--sol-radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--sol-text-muted); }
