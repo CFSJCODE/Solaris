@@ -2,6 +2,18 @@
 
 Plataforma de IA pessoal — chat multi-LLM, RAG por projeto e visão computacional.
 
+![Tauri](https://img.shields.io/badge/Tauri_2-24C8DB?style=flat&logo=tauri&logoColor=white)
+![React](https://img.shields.io/badge/React_18-61DAFB?style=flat&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
+![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-4169E1?style=flat&logo=postgresql&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-CE422B?style=flat&logo=rust&logoColor=white)
+![Anthropic](https://img.shields.io/badge/Anthropic-D97757?style=flat&logo=anthropic&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat&logo=opencv&logoColor=white)
+![ONNX](https://img.shields.io/badge/ONNX_Runtime-005CED?style=flat&logo=onnx&logoColor=white)
+
 **Stack:** Tauri 2 · Vite + React + TypeScript · FastAPI (Python) · PostgreSQL + pgvector
 
 ---
@@ -85,7 +97,7 @@ solaris/
 | Etapa | Conteúdo |
 |---|---|
 | **1 — Fundação** ✅ | Scaffold, design system, backend stub, scripts |
-| **2 — Chat** | Anthropic + OpenRouter, streaming SSE, fallback, custos |
+| **2 — Chat** ✅ | Anthropic + OpenRouter, streaming SSE, fallback, custos |
 | **3 — RAG** | Upload MD/TXT/PDF, embeddings ONNX, busca por projeto |
 | **4 — Visão** | Webcam ao vivo, YOLOv8n, detector de cansaço, gestos |
 
