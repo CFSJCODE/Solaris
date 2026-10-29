@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, KeyboardEvent, FormEvent } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useChat, ChatMessage, Conversation } from "../hooks/useChat"
 
 // ── Formatting helpers ──────────────────────────────────────────────────────
@@ -69,11 +71,26 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
           color: isUser ? "#fff" : "var(--sol-text)",
           fontSize: 14,
           lineHeight: 1.6,
-          whiteSpace: "pre-wrap",
+          whiteSpace: isUser ? "pre-wrap" : "normal",
           wordBreak: "break-word",
         }}
       >
-        {isEmpty ? <StreamingDots /> : msg.content}
+        {isEmpty ? (
+          <StreamingDots />
+        ) : isUser ? (
+          msg.content
+        ) : (
+          <div className="sol-md">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+              }}
+            >
+              {msg.content}
+            </ReactMarkdown>
+          </div>
+        )}
         {isLast && isStreaming && msg.content && (
           <span
             style={{
@@ -290,6 +307,25 @@ export default function ChatPage() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
         }
+        .sol-md > :first-child { margin-top: 0; }
+        .sol-md > :last-child { margin-bottom: 0; }
+        .sol-md p, .sol-md ul, .sol-md ol, .sol-md pre, .sol-md table, .sol-md blockquote { margin: var(--sol-space-2) 0; }
+        .sol-md h1, .sol-md h2, .sol-md h3, .sol-md h4 { margin: var(--sol-space-4) 0 var(--sol-space-2); font-weight: 600; line-height: 1.3; }
+        .sol-md h1 { font-size: 18px; }
+        .sol-md h2 { font-size: 16px; }
+        .sol-md h3, .sol-md h4 { font-size: 14px; }
+        .sol-md ul, .sol-md ol { padding-left: var(--sol-space-6); }
+        .sol-md li + li { margin-top: var(--sol-space-1); }
+        .sol-md strong { font-weight: 600; color: var(--sol-glow); }
+        .sol-md a { color: var(--sol-gold); }
+        .sol-md code { font-family: var(--sol-font-mono); font-size: 13px; background: var(--sol-ink-900); border: 1px solid var(--sol-border); border-radius: var(--sol-radius-sm); padding: 0 var(--sol-space-1); }
+        .sol-md pre { background: var(--sol-ink-950); border: 1px solid var(--sol-border); border-radius: var(--sol-radius-md); padding: var(--sol-space-3); overflow-x: auto; }
+        .sol-md pre code { background: none; border: none; padding: 0; }
+        .sol-md blockquote { border-left: 3px solid var(--sol-flare); padding-left: var(--sol-space-3); color: var(--sol-text-muted); }
+        .sol-md table { border-collapse: collapse; display: block; overflow-x: auto; max-width: 100%; }
+        .sol-md th, .sol-md td { border: 1px solid var(--sol-border); padding: var(--sol-space-1) var(--sol-space-3); text-align: left; vertical-align: top; }
+        .sol-md th { background: var(--sol-ink-800); font-weight: 600; }
+        .sol-md hr { border: none; border-top: 1px solid var(--sol-border); margin: var(--sol-space-4) 0; }
       `}</style>
 
       <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
