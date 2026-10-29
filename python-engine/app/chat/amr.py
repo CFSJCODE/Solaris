@@ -36,5 +36,5 @@ def route(user_message: str) -> ModelSelection:
         return ModelSelection(provider="anthropic", model=model, reason=reason)
 
     # OpenRouter only
-    model = "mistralai/mistral-7b-instruct:free" if is_complex else "google/gemma-2-9b-it:free"
+    model = "google/gemma-4-31b-it:free" if is_complex else "nvidia/nemotron-3.5-lightning:free"
     return ModelSelection(provider="openrouter", model=model, reason="openrouter fallback")

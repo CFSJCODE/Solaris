@@ -14,9 +14,9 @@ ANTHROPIC_PRICING: dict[str, dict[str, float]] = {
 }
 
 OPENROUTER_PRICING: dict[str, dict[str, float]] = {
-    "google/gemma-2-9b-it:free":                  {"input": 0.0, "output": 0.0},
-    "mistralai/mistral-7b-instruct:free":          {"input": 0.0, "output": 0.0},
-    "meta-llama/llama-3.3-70b-instruct:free":      {"input": 0.0, "output": 0.0},
+    "google/gemma-4-31b-it:free":                  {"input": 0.0, "output": 0.0},
+    "google/gemma-4-26b-a4b-it:free":              {"input": 0.0, "output": 0.0},
+    "nvidia/nemotron-3.5-lightning:free":           {"input": 0.0, "output": 0.0},
 }
 
 
@@ -28,7 +28,9 @@ async def stream_anthropic(
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY não configurada.")
-    client = AsyncAnthropic(api_key=api_key)
+    workspace_id = os.getenv("ANTHROPIC_WORKSPACE_ID", "")
+    extra_headers = {"anthropic-workspace-id": workspace_id} if workspace_id else {}
+    client = AsyncAnthropic(api_key=api_key, default_headers=extra_headers)
     kwargs: dict = {"model": model, "max_tokens": 2048, "messages": messages}
     if system:
         kwargs["system"] = system
@@ -57,7 +59,7 @@ async def stream_anthropic(
 
 async def stream_openrouter(
     messages: list[dict],
-    model: str = "google/gemma-2-9b-it:free",
+    model: str = "google/gemma-4-31b-it:free",
     system: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     api_key = os.getenv("OPENROUTER_API_KEY", "")

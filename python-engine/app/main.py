@@ -53,6 +53,7 @@ async def handle_chat_stream(req: dict) -> None:
         return
 
     accumulated = ""
+    errors: list[str] = []
     usage: dict = {}
 
     async def stream(prov: str, mdl: str) -> bool:
@@ -68,7 +69,7 @@ async def handle_chat_stream(req: dict) -> None:
                     usage = event.get("usage", {})
             return True
         except Exception as exc:
-            usage["error"] = str(exc)
+            errors.append(f"[{prov}/{mdl}] {exc}")
             return False
 
     ok = await stream(provider, model)
@@ -76,13 +77,13 @@ async def handle_chat_stream(req: dict) -> None:
     # Circuit breaker: try fallback if primary failed with nothing accumulated
     if not ok and not accumulated:
         fb_prov = "openrouter" if provider == "anthropic" else "anthropic"
-        fb_mdl = ("google/gemma-2-9b-it:free" if fb_prov == "openrouter"
+        fb_mdl = ("google/gemma-4-31b-it:free" if fb_prov == "openrouter"
                   else "claude-haiku-5-5")
         await stream(fb_prov, fb_mdl)
 
     if not accumulated:
         _write({"id": req_id, "type": "chat_error",
-                "message": usage.get("error") or "Falha ao gerar resposta."})
+                "message": "; ".join(errors) or "Falha ao gerar resposta."})
         return
 
     _write({"id": req_id, "type": "chat_done", "usage": usage})
@@ -100,9 +101,9 @@ async def handle_models_list(req: dict) -> None:
         ]
     if os.getenv("OPENROUTER_API_KEY"):
         models += [
-            {"provider": "openrouter", "model": "google/gemma-2-9b-it:free",          "label": "Gemma 2 9B (free)"},
-            {"provider": "openrouter", "model": "mistralai/mistral-7b-instruct:free",  "label": "Mistral 7B (free)"},
-            {"provider": "openrouter", "model": "meta-llama/llama-3.3-70b-instruct:free", "label": "Llama 3.3 70B (free)"},
+            {"provider": "openrouter", "model": "google/gemma-4-31b-it:free",     "label": "Gemma 4 31B (free)"},
+            {"provider": "openrouter", "model": "google/gemma-4-26b-a4b-it:free", "label": "Gemma 4 26B (free)"},
+            {"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free", "label": "Nemotron 3.5 (free)"},
         ]
     _write({"id": req["id"], "type": "models_result", "models": models})
 
