@@ -9,9 +9,8 @@ a = Analysis(
     ['app/main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[
-        ('.env', '.'),
-    ],
+    # Nunca empacotar o .env: as chaves ficariam dentro do executável distribuído.
+    datas=[],
     hiddenimports=[
         'anthropic',
         'httpx',

@@ -106,9 +106,7 @@ pub async fn chat_send(
 
     // Process events — we're in an async context; use blocking_recv is fine here
     // because the engine runs on its own OS thread.
-    let db_state = db.inner().clone() as *const DbState;
-    // SAFETY: db_state is managed state that outlives this command
-    let db_ref = unsafe { &*db_state };
+    let db_ref = db.inner();
 
     let mut usage_val = Value::Null;
     let mut err_msg: Option<String> = None;
@@ -224,10 +222,11 @@ pub async fn upload_document(
     let overlap = 64usize;
     let mut chunks: Vec<String> = Vec::new();
     let mut start = 0;
-    let t = text.trim();
+    // Fatiar por caractere: fatiar bytes quebra acentos (UTF-8) e causa panic.
+    let t: Vec<char> = text.trim().chars().collect();
     while start < t.len() {
         let end = (start + chunk_size).min(t.len());
-        let chunk = t[start..end].trim().to_string();
+        let chunk = t[start..end].iter().collect::<String>().trim().to_string();
         if !chunk.is_empty() {
             chunks.push(chunk);
         }

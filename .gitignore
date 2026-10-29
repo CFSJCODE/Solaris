@@ -40,6 +40,8 @@ logs/
 backend/dist/
 backend/build/
 backend/__pycache__/
+python-engine/dist/
+python-engine/build/
 
 # ── Tauri sidecar binaries (gerados no build) ────────────
 src-tauri/binaries/
