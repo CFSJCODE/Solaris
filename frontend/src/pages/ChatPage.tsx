@@ -80,7 +80,22 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
           <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
         ) : (
           <div className="sol-md">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (href) window.open(href, "_blank")
+                    }}
+                  >
+                    {children}
+                  </a>
+                ),
+              }}
+            >
               {msg.content}
             </ReactMarkdown>
             {isLast && isStreaming && (
@@ -315,6 +330,14 @@ export default function ChatPage() {
           50% { opacity: 0; }
         }
 
+        /* Semantic tokens for markdown — derived from design system, no hardcoded colors */
+        :root {
+          --sol-md-code-tint: color-mix(in srgb, var(--sol-gold) 12%, transparent);
+          --sol-md-code-block: var(--sol-ink-900, #11141B);
+          --sol-md-table-head: color-mix(in srgb, var(--sol-gold) 8%, transparent);
+          --sol-md-table-stripe: color-mix(in srgb, var(--sol-text) 2%, transparent);
+        }
+
         /* Markdown rendering */
         .sol-md { font-size: 14px; line-height: 1.7; }
         .sol-md > *:first-child { margin-top: 0; }
@@ -339,13 +362,13 @@ export default function ChatPage() {
           font-size: 0.88em;
           padding: 0.15em 0.4em;
           border-radius: 4px;
-          background: rgba(251,185,49,.12);
+          background: var(--sol-md-code-tint);
           color: var(--sol-gold);
         }
         .sol-md pre {
           margin: 0.5em 0;
           border-radius: var(--sol-radius-md);
-          background: rgba(0,0,0,.35);
+          background: var(--sol-md-code-block);
           border: 1px solid var(--sol-border);
           overflow-x: auto;
         }
@@ -369,12 +392,12 @@ export default function ChatPage() {
           text-align: left;
         }
         .sol-md th {
-          background: rgba(251,185,49,.08);
+          background: var(--sol-md-table-head);
           color: var(--sol-gold);
           font-weight: 600;
         }
         .sol-md tr:nth-child(even) td {
-          background: rgba(255,255,255,.02);
+          background: var(--sol-md-table-stripe);
         }
         .sol-md blockquote {
           margin: 0.5em 0;
@@ -392,6 +415,7 @@ export default function ChatPage() {
           color: var(--sol-flare);
           text-decoration: underline;
           text-underline-offset: 2px;
+          cursor: pointer;
         }
       `}</style>
 
