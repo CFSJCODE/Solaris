@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, KeyboardEvent, FormEvent } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { useChat, ChatMessage, Conversation } from "../hooks/useChat"
 
 // ── Formatting helpers ──────────────────────────────────────────────────────
@@ -59,7 +61,7 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
     >
       <div
         style={{
-          maxWidth: "70%",
+          maxWidth: isUser ? "70%" : "85%",
           padding: "var(--sol-space-3) var(--sol-space-4)",
           borderRadius: isUser
             ? "var(--sol-radius-lg) var(--sol-radius-lg) var(--sol-radius-sm) var(--sol-radius-lg)"
@@ -69,18 +71,40 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
           color: isUser ? "#fff" : "var(--sol-text)",
           fontSize: 14,
           lineHeight: 1.6,
-          whiteSpace: "pre-wrap",
           wordBreak: "break-word",
         }}
       >
-        {isEmpty ? <StreamingDots /> : msg.content}
-        {isLast && isStreaming && msg.content && (
+        {isEmpty ? (
+          <StreamingDots />
+        ) : isUser ? (
+          <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
+        ) : (
+          <div className="sol-md">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {msg.content}
+            </ReactMarkdown>
+            {isLast && isStreaming && (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 2,
+                  height: "1em",
+                  background: "var(--sol-flare)",
+                  marginLeft: 2,
+                  verticalAlign: "text-bottom",
+                  animation: "sol-blink 0.9s step-end infinite",
+                }}
+              />
+            )}
+          </div>
+        )}
+        {isUser && isLast && isStreaming && msg.content && (
           <span
             style={{
               display: "inline-block",
               width: 2,
               height: "1em",
-              background: "var(--sol-flare)",
+              background: "rgba(255,255,255,0.8)",
               marginLeft: 2,
               verticalAlign: "text-bottom",
               animation: "sol-blink 0.9s step-end infinite",
@@ -280,7 +304,7 @@ export default function ChatPage() {
 
   return (
     <>
-      {/* CSS animations */}
+      {/* CSS animations + markdown styles */}
       <style>{`
         @keyframes sol-pulse {
           0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
@@ -289,6 +313,85 @@ export default function ChatPage() {
         @keyframes sol-blink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
+        }
+
+        /* Markdown rendering */
+        .sol-md { font-size: 14px; line-height: 1.7; }
+        .sol-md > *:first-child { margin-top: 0; }
+        .sol-md > *:last-child { margin-bottom: 0; }
+        .sol-md p { margin: 0 0 0.6em; }
+        .sol-md p:last-child { margin-bottom: 0; }
+        .sol-md h1, .sol-md h2, .sol-md h3, .sol-md h4 {
+          font-family: var(--sol-font-display);
+          color: var(--sol-gold);
+          margin: 0.9em 0 0.3em;
+          line-height: 1.3;
+        }
+        .sol-md h1 { font-size: 1.2em; }
+        .sol-md h2 { font-size: 1.1em; }
+        .sol-md h3 { font-size: 1em; }
+        .sol-md strong { font-weight: 600; color: var(--sol-text); }
+        .sol-md em { font-style: italic; opacity: 0.9; }
+        .sol-md ul, .sol-md ol { margin: 0.4em 0 0.6em 1.4em; padding: 0; }
+        .sol-md li { margin: 0.2em 0; }
+        .sol-md code {
+          font-family: var(--sol-font-mono, monospace);
+          font-size: 0.88em;
+          padding: 0.15em 0.4em;
+          border-radius: 4px;
+          background: rgba(251,185,49,.12);
+          color: var(--sol-gold);
+        }
+        .sol-md pre {
+          margin: 0.5em 0;
+          border-radius: var(--sol-radius-md);
+          background: rgba(0,0,0,.35);
+          border: 1px solid var(--sol-border);
+          overflow-x: auto;
+        }
+        .sol-md pre code {
+          display: block;
+          padding: 0.8em 1em;
+          background: transparent;
+          color: var(--sol-text);
+          font-size: 0.85em;
+          line-height: 1.6;
+        }
+        .sol-md table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 0.5em 0;
+          font-size: 0.9em;
+        }
+        .sol-md th, .sol-md td {
+          border: 1px solid var(--sol-border);
+          padding: 0.35em 0.7em;
+          text-align: left;
+        }
+        .sol-md th {
+          background: rgba(251,185,49,.08);
+          color: var(--sol-gold);
+          font-weight: 600;
+        }
+        .sol-md tr:nth-child(even) td {
+          background: rgba(255,255,255,.02);
+        }
+        .sol-md blockquote {
+          margin: 0.5em 0;
+          padding: 0.4em 0.8em;
+          border-left: 3px solid var(--sol-gold);
+          opacity: 0.8;
+          font-style: italic;
+        }
+        .sol-md hr {
+          border: none;
+          border-top: 1px solid var(--sol-border);
+          margin: 0.8em 0;
+        }
+        .sol-md a {
+          color: var(--sol-flare);
+          text-decoration: underline;
+          text-underline-offset: 2px;
         }
       `}</style>
 
