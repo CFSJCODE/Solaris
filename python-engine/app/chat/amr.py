@@ -31,10 +31,10 @@ def route(user_message: str) -> ModelSelection:
     is_complex = any(kw in msg_lower for kw in _COMPLEX_KEYWORDS) or len(user_message) > 300
 
     if has_ant:
-        model = "claude-sonnet-4-5-20250514" if is_complex else "claude-haiku-3-5-20251101"
+        model = "claude-sonnet-5-5" if is_complex else "claude-haiku-5-5"
         reason = "complex task → Sonnet" if is_complex else "simple task → Haiku"
         return ModelSelection(provider="anthropic", model=model, reason=reason)
 
     # OpenRouter only
-    model = "mistralai/mistral-7b-instruct:free" if is_complex else "meta-llama/llama-3.1-8b-instruct:free"
+    model = "mistralai/mistral-7b-instruct:free" if is_complex else "google/gemma-2-9b-it:free"
     return ModelSelection(provider="openrouter", model=model, reason="openrouter fallback")

@@ -9,22 +9,20 @@ import httpx
 from anthropic import AsyncAnthropic
 
 ANTHROPIC_PRICING: dict[str, dict[str, float]] = {
-    "claude-haiku-3-5-20251101":  {"input": 0.80e-6, "output": 4.0e-6},
-    "claude-haiku-3-20240307":    {"input": 0.25e-6, "output": 1.25e-6},
-    "claude-sonnet-4-5-20250514": {"input": 3.0e-6,  "output": 15.0e-6},
-    "claude-sonnet-4-20250514":   {"input": 3.0e-6,  "output": 15.0e-6},
+    "claude-haiku-5-5":  {"input": 0.10e-6, "output": 0.50e-6},
+    "claude-sonnet-5-5": {"input": 2.0e-6,  "output": 10.0e-6},
 }
 
 OPENROUTER_PRICING: dict[str, dict[str, float]] = {
-    "meta-llama/llama-3.1-8b-instruct:free": {"input": 0.0, "output": 0.0},
-    "google/gemma-2-9b-it:free":             {"input": 0.0, "output": 0.0},
-    "mistralai/mistral-7b-instruct:free":    {"input": 0.0, "output": 0.0},
+    "google/gemma-2-9b-it:free":                  {"input": 0.0, "output": 0.0},
+    "mistralai/mistral-7b-instruct:free":          {"input": 0.0, "output": 0.0},
+    "meta-llama/llama-3.3-70b-instruct:free":      {"input": 0.0, "output": 0.0},
 }
 
 
 async def stream_anthropic(
     messages: list[dict],
-    model: str = "claude-haiku-3-5-20251101",
+    model: str = "claude-haiku-5-5",
     system: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
@@ -59,7 +57,7 @@ async def stream_anthropic(
 
 async def stream_openrouter(
     messages: list[dict],
-    model: str = "meta-llama/llama-3.1-8b-instruct:free",
+    model: str = "google/gemma-2-9b-it:free",
     system: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     api_key = os.getenv("OPENROUTER_API_KEY", "")

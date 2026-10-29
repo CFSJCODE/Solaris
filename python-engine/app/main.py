@@ -14,8 +14,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Ensure stdout is line-buffered (critical for pipes on Windows)
-sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
+# Ensure stdout is line-buffered and stdin strips UTF-8 BOM (PowerShell adds it)
+sys.stdout.reconfigure(line_buffering=True)   # type: ignore[attr-defined]
+sys.stdin.reconfigure(encoding="utf-8-sig")   # type: ignore[attr-defined]
 
 # Add engine root to path
 ENGINE_ROOT = Path(__file__).parent.parent
@@ -75,8 +76,8 @@ async def handle_chat_stream(req: dict) -> None:
     # Circuit breaker: try fallback if primary failed with nothing accumulated
     if not ok and not accumulated:
         fb_prov = "openrouter" if provider == "anthropic" else "anthropic"
-        fb_mdl = ("meta-llama/llama-3.1-8b-instruct:free" if fb_prov == "openrouter"
-                  else "claude-haiku-3-5-20251101")
+        fb_mdl = ("google/gemma-2-9b-it:free" if fb_prov == "openrouter"
+                  else "claude-haiku-5-5")
         await stream(fb_prov, fb_mdl)
 
     if not accumulated:
@@ -94,14 +95,14 @@ async def handle_models_list(req: dict) -> None:
     models: list[dict] = []
     if os.getenv("ANTHROPIC_API_KEY"):
         models += [
-            {"provider": "anthropic", "model": "claude-haiku-3-5-20251101", "label": "Claude Haiku 3.5"},
-            {"provider": "anthropic", "model": "claude-sonnet-4-5-20250514", "label": "Claude Sonnet 4.5"},
+            {"provider": "anthropic", "model": "claude-haiku-5-5",  "label": "Claude Haiku 5.5"},
+            {"provider": "anthropic", "model": "claude-sonnet-5-5", "label": "Claude Sonnet 5.5"},
         ]
     if os.getenv("OPENROUTER_API_KEY"):
         models += [
-            {"provider": "openrouter", "model": "meta-llama/llama-3.1-8b-instruct:free", "label": "Llama 3.1 8B (free)"},
-            {"provider": "openrouter", "model": "mistralai/mistral-7b-instruct:free", "label": "Mistral 7B (free)"},
-            {"provider": "openrouter", "model": "google/gemma-2-9b-it:free", "label": "Gemma 2 9B (free)"},
+            {"provider": "openrouter", "model": "google/gemma-2-9b-it:free",          "label": "Gemma 2 9B (free)"},
+            {"provider": "openrouter", "model": "mistralai/mistral-7b-instruct:free",  "label": "Mistral 7B (free)"},
+            {"provider": "openrouter", "model": "meta-llama/llama-3.3-70b-instruct:free", "label": "Llama 3.3 70B (free)"},
         ]
     _write({"id": req["id"], "type": "models_result", "models": models})
 
