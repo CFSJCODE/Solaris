@@ -1,4 +1,6 @@
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback } from "react"
+import { invoke } from "@tauri-apps/api/core"
+import { Channel } from "@tauri-apps/api/core"
 
 export interface ChatMessage {
   id?: number
@@ -14,10 +16,16 @@ export interface ChatMessage {
 export interface Conversation {
   id: number
   title: string
-  projectId?: number
-  createdAt: string
-  updatedAt: string
+  project_id?: number
+  created_at: string
+  updated_at: string
 }
+
+// Events emitted by the Rust chat_send command via Channel
+type ChatEvent =
+  | { type: "delta"; text: string }
+  | { type: "done"; usage: { model?: string; provider?: string; input_tokens?: number; output_tokens?: number; cost_usd?: number } }
+  | { type: "error"; message: string }
 
 export function useChat() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -25,75 +33,45 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingModel, setStreamingModel] = useState<string | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
 
   const loadConversations = useCallback(async () => {
     try {
-      const res = await fetch("/api/chat/conversations")
-      if (res.ok) {
-        const data: any[] = await res.json()
-        setConversations(
-          data.map((c) => ({
-            id: c.id,
-            title: c.title,
-            projectId: c.project_id ?? undefined,
-            createdAt: c.created_at,
-            updatedAt: c.updated_at,
-          }))
-        )
-      }
+      const data = await invoke<Conversation[]>("list_conversations")
+      setConversations(data)
     } catch {}
   }, [])
 
   const loadConversation = useCallback(async (id: number) => {
     try {
-      const res = await fetch(`/api/chat/conversations/${id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setActiveConversation({
-          id: data.id,
-          title: data.title,
-          projectId: data.project_id ?? undefined,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        })
-        setMessages(
-          data.messages.map((m: any) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            model: m.model ?? undefined,
-            provider: m.provider ?? undefined,
-            inputTokens: m.input_tokens,
-            outputTokens: m.output_tokens,
-            costUsd: m.cost_usd,
-          }))
-        )
-      }
+      const msgs = await invoke<ChatMessage[]>("get_conversation", { id })
+      const conv = conversations.find((c) => c.id === id) ?? null
+      setActiveConversation(conv)
+      setMessages(
+        msgs.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          model: m.model ?? undefined,
+          provider: m.provider ?? undefined,
+          costUsd: m.cost_usd ?? undefined,
+        }))
+      )
     } catch {}
-  }, [])
+  }, [conversations])
 
   const newConversation = useCallback(async (): Promise<Conversation | null> => {
     try {
-      const res = await fetch("/api/chat/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "Nova conversa" }),
-      })
-      if (res.ok) {
-        const c = await res.json()
-        const conv: Conversation = {
-          id: c.id,
-          title: c.title,
-          projectId: c.project_id ?? undefined,
-          createdAt: c.created_at,
-          updatedAt: c.updated_at,
-        }
-        setActiveConversation(conv)
-        setMessages([])
-        await loadConversations()
-        return conv
+      const id = await invoke<number>("new_conversation", { title: "Nova conversa", projectId: null })
+      await loadConversations()
+      const conv: Conversation = {
+        id,
+        title: "Nova conversa",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
+      setActiveConversation(conv)
+      setMessages([])
+      return conv
     } catch {}
     return null
   }, [loadConversations])
@@ -101,7 +79,7 @@ export function useChat() {
   const deleteConversation = useCallback(
     async (id: number) => {
       try {
-        await fetch(`/api/chat/conversations/${id}`, { method: "DELETE" })
+        await invoke("delete_conversation", { id })
         if (activeConversation?.id === id) {
           setActiveConversation(null)
           setMessages([])
@@ -116,96 +94,76 @@ export function useChat() {
     async (text: string) => {
       if (isStreaming) return
 
-      let convId = activeConversation?.id
-      if (!convId) {
-        const conv = await newConversation()
+      let conv = activeConversation
+      if (!conv) {
+        conv = await newConversation()
         if (!conv) return
-        convId = conv.id
       }
 
-      // Optimistically add user message
-      setMessages((prev) => [...prev, { role: "user", content: text }])
-      // Placeholder for streaming assistant response
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }])
+      // Optimistic UI
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: text },
+        { role: "assistant", content: "" },
+      ])
       setIsStreaming(true)
 
-      abortRef.current = new AbortController()
-
       try {
-        const res = await fetch(`/api/chat/conversations/${convId}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversation_id: convId, message: text }),
-          signal: abortRef.current.signal,
-        })
+        const channel = new Channel<ChatEvent>()
 
-        if (!res.ok || !res.body) throw new Error("Stream failed")
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() ?? ""
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue
-            try {
-              const ev = JSON.parse(line.slice(6))
-              if (ev.type === "model") {
-                setStreamingModel(`${ev.provider}/${ev.model}`)
-              } else if (ev.type === "delta") {
-                setMessages((prev) => {
-                  const next = [...prev]
-                  const last = next[next.length - 1]
-                  next[next.length - 1] = { ...last, content: last.content + ev.text }
-                  return next
-                })
-              } else if (ev.type === "done") {
-                setMessages((prev) => {
-                  const next = [...prev]
-                  next[next.length - 1] = {
-                    ...next[next.length - 1],
-                    id: ev.message_id,
-                    model: ev.usage?.model,
-                    provider: ev.usage?.provider,
-                    inputTokens: ev.usage?.input_tokens,
-                    outputTokens: ev.usage?.output_tokens,
-                    costUsd: ev.usage?.cost_usd,
-                  }
-                  return next
-                })
-                setStreamingModel(null)
-                // Refresh sidebar title
-                await loadConversations()
-              } else if (ev.type === "error") {
-                setMessages((prev) => {
-                  const next = [...prev]
-                  next[next.length - 1] = {
-                    ...next[next.length - 1],
-                    content: `Erro: ${ev.message}`,
-                  }
-                  return next
-                })
+        channel.onmessage = (event) => {
+          if (event.type === "delta") {
+            setMessages((prev) => {
+              const next = [...prev]
+              const last = next[next.length - 1]
+              next[next.length - 1] = { ...last, content: last.content + event.text }
+              return next
+            })
+          } else if (event.type === "done") {
+            const u = event.usage
+            if (u.model) setStreamingModel(`${u.provider ?? ""}/${u.model}`)
+            setMessages((prev) => {
+              const next = [...prev]
+              next[next.length - 1] = {
+                ...next[next.length - 1],
+                model: u.model,
+                provider: u.provider,
+                inputTokens: u.input_tokens,
+                outputTokens: u.output_tokens,
+                costUsd: u.cost_usd,
               }
-            } catch {}
+              return next
+            })
+            setStreamingModel(null)
+            loadConversations()
+          } else if (event.type === "error") {
+            setMessages((prev) => {
+              const next = [...prev]
+              next[next.length - 1] = {
+                ...next[next.length - 1],
+                content: `Erro: ${event.message}`,
+              }
+              return next
+            })
           }
         }
+
+        await invoke("chat_send", {
+          conversationId: conv.id,
+          message: text,
+          model: null,
+          provider: null,
+          onEvent: channel,
+        })
       } catch (err: any) {
-        if (err.name !== "AbortError") {
-          setMessages((prev) => {
-            const next = [...prev]
-            next[next.length - 1] = {
-              ...next[next.length - 1],
-              content: "Erro ao conectar com o backend.",
-            }
-            return next
-          })
-        }
+        setMessages((prev) => {
+          const next = [...prev]
+          next[next.length - 1] = {
+            ...next[next.length - 1],
+            content: "Erro ao enviar mensagem.",
+          }
+          return next
+        })
       } finally {
         setIsStreaming(false)
         setStreamingModel(null)
@@ -215,7 +173,8 @@ export function useChat() {
   )
 
   const stopStreaming = useCallback(() => {
-    abortRef.current?.abort()
+    // Tauri channels don't have a cancel mechanism at the hook level;
+    // the command completes naturally. This is a no-op placeholder.
   }, [])
 
   return {

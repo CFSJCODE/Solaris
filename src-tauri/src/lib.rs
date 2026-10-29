@@ -1,26 +1,38 @@
-use std::sync::{Arc, Mutex};
+mod commands;
+mod db;
+mod engine;
+
+use std::path::PathBuf;
 use tauri::{Manager, RunEvent};
-use tauri_plugin_shell::ShellExt;
-use tauri_plugin_shell::process::CommandChild;
+
+fn storage_dir(app: &tauri::AppHandle) -> PathBuf {
+    app.path()
+        .app_data_dir()
+        .unwrap_or_else(|_| PathBuf::from("storage"))
+        .join("storage")
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let sidecar_child: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
-    let sidecar_child_clone = sidecar_child.clone();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .setup(move |app| {
-            let shell = app.shell();
-            let child = shell
-                .sidecar("solaris-backend")
-                .expect("solaris-backend sidecar not found")
-                .spawn()
-                .expect("failed to spawn solaris-backend");
+        .setup(|app| {
+            let handle = app.handle().clone();
 
-            *sidecar_child.lock().unwrap() = Some(child);
+            // Open SQLite DB
+            let storage = storage_dir(&handle);
+            let conn = db::open(&storage).expect("failed to open database");
+            app.manage(db::DbState(std::sync::Mutex::new(conn)));
+
+            // Set env var so Python engine finds storage
+            std::env::set_var("SOLARIS_STORAGE", storage.to_str().unwrap_or(""));
+
+            // Spawn Python engine sidecar
+            let engine = engine::EngineState::spawn(&handle)
+                .expect("failed to spawn solaris-engine");
+            app.manage(engine);
 
             #[cfg(debug_assertions)]
             if let Some(window) = app.get_webview_window("main") {
@@ -29,15 +41,23 @@ pub fn run() {
 
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            commands::list_conversations,
+            commands::new_conversation,
+            commands::delete_conversation,
+            commands::get_conversation,
+            commands::chat_send,
+            commands::list_models,
+            commands::upload_document,
+            commands::list_documents,
+            commands::delete_document,
+        ])
         .build(tauri::generate_context!())
         .expect("error building tauri application")
-        .run(move |_app, event| {
+        .run(|app, event| {
             if let RunEvent::Exit = event {
-                // Terminate the backend sidecar when the app closes
-                if let Ok(mut guard) = sidecar_child_clone.lock() {
-                    if let Some(child) = guard.take() {
-                        let _ = child.kill();
-                    }
+                if let Some(engine) = app.try_state::<engine::EngineState>() {
+                    engine.kill();
                 }
             }
         });

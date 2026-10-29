@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SOLARIS Engine Protocol",
+  "description": "JSON Lines protocol between Rust (Tauri) and the Python engine. One JSON object per line on stdin/stdout.",
+  "version": "1.0",
+
+  "request_types": {
+    "chat_stream": {
+      "description": "Stream an LLM response. Python sends N chat_delta then one chat_done.",
+      "fields": { "id": "string", "type": "chat_stream", "messages": "array", "model": "string", "provider": "string", "system": "string|null" }
+    },
+    "models_list": {
+      "description": "Return available models based on configured API keys.",
+      "fields": { "id": "string", "type": "models_list" }
+    },
+    "rag_embed": {
+      "description": "Embed a list of text passages. Returns float[][] embeddings.",
+      "fields": { "id": "string", "type": "rag_embed", "texts": "string[]" }
+    },
+    "rag_embed_query": {
+      "description": "Embed a single query string.",
+      "fields": { "id": "string", "type": "rag_embed_query", "query": "string" }
+    },
+    "rag_add_chunks": {
+      "description": "Add chunks+embeddings to ChromaDB.",
+      "fields": { "id": "string", "type": "rag_add_chunks", "project_id": "int|null", "chunk_ids": "string[]", "embeddings": "float[][]", "texts": "string[]", "metadatas": "object[]" }
+    },
+    "rag_search": {
+      "description": "Semantic search in ChromaDB. Returns top-N hits.",
+      "fields": { "id": "string", "type": "rag_search", "project_id": "int|null", "query_embedding": "float[]", "n_results": "int" }
+    },
+    "rag_delete_chunks": {
+      "description": "Remove chunks from ChromaDB by ID.",
+      "fields": { "id": "string", "type": "rag_delete_chunks", "project_id": "int|null", "chunk_ids": "string[]" }
+    },
+    "extract_text": {
+      "description": "Extract plain text from file bytes (base64). Supports text/plain, text/markdown, application/pdf.",
+      "fields": { "id": "string", "type": "extract_text", "content_b64": "string", "mime_type": "string" }
+    }
+  },
+
+  "response_types": {
+    "chat_delta": { "fields": { "id": "string", "type": "chat_delta", "text": "string" } },
+    "chat_done":  { "fields": { "id": "string", "type": "chat_done", "usage": { "input_tokens": "int", "output_tokens": "int", "cost_usd": "float", "model": "string", "provider": "string" } } },
+    "chat_error": { "fields": { "id": "string", "type": "chat_error", "message": "string" } },
+    "models_result": { "fields": { "id": "string", "type": "models_result", "models": "object[]" } },
+    "rag_embed_result": { "fields": { "id": "string", "type": "rag_embed_result", "embeddings": "float[][]" } },
+    "rag_embed_query_result": { "fields": { "id": "string", "type": "rag_embed_query_result", "embedding": "float[]" } },
+    "rag_add_done": { "fields": { "id": "string", "type": "rag_add_done" } },
+    "rag_search_result": { "fields": { "id": "string", "type": "rag_search_result", "hits": "object[]" } },
+    "rag_delete_done": { "fields": { "id": "string", "type": "rag_delete_done" } },
+    "extract_text_result": { "fields": { "id": "string", "type": "extract_text_result", "text": "string" } },
+    "error": { "fields": { "id": "string", "type": "error", "message": "string" } }
+  }
+}
