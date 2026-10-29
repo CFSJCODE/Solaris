@@ -15,7 +15,8 @@ from pathlib import Path
 from typing import Any
 
 # Ensure stdout is line-buffered and stdin strips UTF-8 BOM (PowerShell adds it)
-sys.stdout.reconfigure(line_buffering=True)   # type: ignore[attr-defined]
+# UTF-8 explícito: no Windows o padrão do pipe é cp1252 e o Rust lê UTF-8 (acentos viravam �)
+sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)   # type: ignore[attr-defined]
 sys.stdin.reconfigure(encoding="utf-8-sig")   # type: ignore[attr-defined]
 
 # Add engine root to path
