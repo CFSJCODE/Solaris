@@ -23,6 +23,10 @@ onnxruntime==1.19.2
 numpy==1.26.4
 tokenizers==0.20.0
 
+# RAG — vector store e extração de texto
+chromadb==0.5.23
+pdfminer.six==20231228
+
 # Visão computacional
 opencv-python==4.10.0.84
 ultralytics==8.3.2   # YOLOv8n — download pesos na primeira execução

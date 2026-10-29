@@ -25,17 +25,18 @@ OPENROUTER_PRICING: dict[str, dict[str, float]] = {
 async def stream_anthropic(
     messages: list[dict],
     model: str = "claude-haiku-3-5-20251101",
+    system: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     """Stream from Anthropic. Yields delta/done dicts."""
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
     input_tokens = 0
     output_tokens = 0
 
-    async with client.messages.stream(
-        model=model,
-        max_tokens=2048,
-        messages=messages,
-    ) as stream:
+    kwargs: dict = {"model": model, "max_tokens": 2048, "messages": messages}
+    if system:
+        kwargs["system"] = system
+
+    async with client.messages.stream(**kwargs) as stream:
         async for text in stream.text_stream:
             yield {"type": "delta", "text": text}
         final = await stream.get_final_message()
@@ -60,6 +61,7 @@ async def stream_anthropic(
 async def stream_openrouter(
     messages: list[dict],
     model: str = "meta-llama/llama-3.1-8b-instruct:free",
+    system: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     """Stream from OpenRouter. Yields same delta/done format."""
     headers = {
@@ -68,9 +70,12 @@ async def stream_openrouter(
         "HTTP-Referer": "http://localhost",
         "X-Title": "SOLARIS",
     }
+    msgs = messages
+    if system:
+        msgs = [{"role": "system", "content": system}] + messages
     payload = {
         "model": model,
-        "messages": messages,
+        "messages": msgs,
         "stream": True,
         "max_tokens": 2048,
     }

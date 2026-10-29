@@ -19,6 +19,7 @@ from app.modules.chat.schemas import (
 )
 from app.modules.chat.providers import stream_anthropic, stream_openrouter
 from app.modules.chat.router_amr import route as amr_route
+from app.modules.rag.router import retrieve_context
 
 router = APIRouter()
 
@@ -131,6 +132,14 @@ async def send_message(conv_id: int, body: ChatRequest):
             history = [{"role": m.role, "content": m.content} for m in conv.messages]
             history.append({"role": "user", "content": body.message})
 
+            # RAG: retrieve relevant document context
+            rag_context = await retrieve_context(body.message, conv.project_id, n=3)
+            system_prompt = (
+                f"Contexto relevante dos documentos do projeto:\n\n{rag_context}"
+                if rag_context
+                else None
+            )
+
             # AMR: pick provider + model
             has_ant = _has_anthropic()
             has_or = _has_openrouter()
@@ -175,9 +184,9 @@ async def send_message(conv_id: int, body: ChatRequest):
             primary_ok = True
             try:
                 gen = (
-                    stream_anthropic(history, model)
+                    stream_anthropic(history, model, system=system_prompt)
                     if prov == "anthropic"
-                    else stream_openrouter(history, model)
+                    else stream_openrouter(history, model, system=system_prompt)
                 )
                 async for event in gen:
                     if event["type"] == "delta":
@@ -203,9 +212,9 @@ async def send_message(conv_id: int, body: ChatRequest):
                     yield _sse({"type": "model", "provider": fallback_prov, "model": fallback_mdl, "reason": "fallback"})
                     try:
                         gen2 = (
-                            stream_anthropic(history, fallback_mdl)
+                            stream_anthropic(history, fallback_mdl, system=system_prompt)
                             if fallback_prov == "anthropic"
-                            else stream_openrouter(history, fallback_mdl)
+                            else stream_openrouter(history, fallback_mdl, system=system_prompt)
                         )
                         async for event in gen2:
                             if event["type"] == "delta":
