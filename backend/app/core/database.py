@@ -6,13 +6,24 @@ from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 
+_is_sqlite = settings.database_url.startswith("sqlite")
+
 engine = create_async_engine(
     settings.database_url,
     echo=False,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
 )
+
+if _is_sqlite:
+    from sqlalchemy import event
+    from sqlalchemy.ext.asyncio import AsyncConnection
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _set_sqlite_pragmas(dbapi_conn, _):
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.close()
 
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

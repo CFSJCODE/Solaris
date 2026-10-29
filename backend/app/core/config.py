@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8765
 
-    # Banco
-    database_url: str = f"postgresql+asyncpg://solaris:solaris@localhost:5432/solaris"
+    # Banco (SQLite por padrão — zero instalação)
+    database_url: str = f"sqlite+aiosqlite:///{BASE_DIR / 'storage' / 'solaris.db'}"
 
     # Armazenamento local (sem MinIO — pasta simples)
     storage_dir: Path = BASE_DIR / "storage"
