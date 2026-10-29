@@ -31,3 +31,6 @@ ultralytics==8.3.2   # YOLOv8n — download pesos na primeira execução
 python-multipart==0.0.12
 python-dotenv==1.0.1
 aiofiles==24.1.0
+
+# Build (somente dev — não necessário em produção)
+pyinstaller>=6.0.0
