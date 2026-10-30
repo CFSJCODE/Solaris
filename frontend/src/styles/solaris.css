@@ -149,7 +149,7 @@ html, body {
 .btn-primary {
   padding: var(--sol-space-3) var(--sol-space-5); border-radius: var(--sol-radius-md);
   border: none; cursor: pointer; font-family: var(--sol-font-ui); font-size: 14px; font-weight: 600;
-  background: var(--sol-gold); color: #0B0D12;
+  background: var(--sol-gold); color: var(--sol-ink-950);
 }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-ghost {
@@ -161,6 +161,6 @@ html, body {
 .btn-danger {
   padding: var(--sol-space-2) var(--sol-space-4); border-radius: var(--sol-radius-md);
   border: 1px solid transparent; cursor: pointer; font-family: var(--sol-font-ui); font-size: 13px;
-  background: transparent; color: var(--sol-error, #e55);
+  background: transparent; color: var(--sol-error);
 }
-.btn-danger:hover { background: rgba(220,50,50,.1); }
+.btn-danger:hover { background: color-mix(in srgb, var(--sol-error) 12%, transparent); }

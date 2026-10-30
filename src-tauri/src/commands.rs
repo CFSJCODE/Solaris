@@ -80,9 +80,11 @@ pub async fn chat_send(
         .map(|m| json!({"role": m.role, "content": m.content}))
         .collect();
 
-    // Build FTS memory context from user message keywords
-    let fts_keywords: Vec<&str> = message
+    // Build FTS memory context from user message keywords.
+    // Strip non-alphanumeric characters so punctuation doesn't produce invalid FTS5 syntax.
+    let fts_keywords: Vec<String> = message
         .split_whitespace()
+        .map(|w| w.chars().filter(|c| c.is_alphanumeric()).collect::<String>())
         .filter(|w| w.len() > 3)
         .take(5)
         .collect();
