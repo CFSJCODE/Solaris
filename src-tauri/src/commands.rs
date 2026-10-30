@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{ipc::Channel, State};
 
-use crate::db::{Conversation, DbState, Document, Message};
+use crate::db::{Conversation, DbState, Document, Message, Project};
 use crate::engine::EngineState;
 
 static REQ_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -80,6 +80,28 @@ pub async fn chat_send(
         .map(|m| json!({"role": m.role, "content": m.content}))
         .collect();
 
+    // Build FTS memory context from user message keywords
+    let fts_keywords: Vec<&str> = message
+        .split_whitespace()
+        .filter(|w| w.len() > 3)
+        .take(5)
+        .collect();
+    let fts_query = fts_keywords.join(" OR ");
+    let memory_snippets = if !fts_query.is_empty() {
+        db.fts_search(&fts_query, conversation_id, 3)
+            .unwrap_or_default()
+    } else {
+        vec![]
+    };
+    let system_context: Option<String> = if memory_snippets.is_empty() {
+        None
+    } else {
+        Some(format!(
+            "Contexto de conversas anteriores (memória):\n{}",
+            memory_snippets.join("\n---\n")
+        ))
+    };
+
     let req_id = next_id();
     let mut req = json!({
         "id": req_id,
@@ -91,6 +113,9 @@ pub async fn chat_send(
     }
     if let Some(p) = provider {
         req["provider"] = Value::String(p);
+    }
+    if let Some(sys) = system_context {
+        req["system"] = Value::String(sys);
     }
 
     // Accumulate the full reply so we can persist it
@@ -169,6 +194,39 @@ pub async fn chat_send(
     }
 
     Ok(())
+}
+
+// ── Projects ──────────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub fn list_projects(db: State<DbState>) -> Result<Vec<Project>, String> {
+    db.list_projects().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn create_project(
+    db: State<DbState>,
+    name: String,
+    description: Option<String>,
+) -> Result<i64, String> {
+    db.create_project(&name, description.as_deref())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn rename_project(
+    db: State<DbState>,
+    id: i64,
+    name: String,
+    description: Option<String>,
+) -> Result<(), String> {
+    db.rename_project(id, &name, description.as_deref())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_project(db: State<DbState>, id: i64) -> Result<(), String> {
+    db.delete_project(id).map_err(|e| e.to_string())
 }
 
 // ── Models ────────────────────────────────────────────────────────────────
