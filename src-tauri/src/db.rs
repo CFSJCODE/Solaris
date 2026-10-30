@@ -86,20 +86,22 @@ fn migrate(conn: &Connection) -> Result<()> {
         CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
             content,
             conversation_id UNINDEXED,
-            message_id UNINDEXED,
             content='messages',
             content_rowid='id'
         );
 
         CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
-            INSERT INTO messages_fts(rowid, content, conversation_id, message_id)
-            VALUES (new.id, new.content, new.conversation_id, new.id);
+            INSERT INTO messages_fts(rowid, content, conversation_id)
+            VALUES (new.id, new.content, new.conversation_id);
         END;
 
         CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
-            INSERT INTO messages_fts(messages_fts, rowid, content, conversation_id, message_id)
-            VALUES ('delete', old.id, old.content, old.conversation_id, old.id);
+            INSERT INTO messages_fts(messages_fts, rowid, content, conversation_id)
+            VALUES ('delete', old.id, old.content, old.conversation_id);
         END;
+
+        INSERT OR IGNORE INTO messages_fts(rowid, content, conversation_id)
+            SELECT id, content, conversation_id FROM messages;
 
         CREATE TABLE IF NOT EXISTS documents (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
