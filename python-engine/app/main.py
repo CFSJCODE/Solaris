@@ -204,11 +204,18 @@ async def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    # Load .env from the engine's directory (development) or storage dir (packaged)
+    # Load .env: app data dir (installed app), then engine dir, then dev locations
     try:
+        import os
         from dotenv import load_dotenv
-        # Try packaged location first, then dev location
+        candidates = []
+        storage = os.getenv("SOLARIS_STORAGE")
+        if storage:
+            # O Rust define SOLARIS_STORAGE = <app data>/storage; o .env fica em <app data>,
+            # pois o instalador não empacota chaves.
+            candidates.append(Path(storage).parent / ".env")
         for env_path in [
+            *candidates,
             Path(sys.executable).parent / ".env",
             ENGINE_ROOT / ".env",
             ENGINE_ROOT.parent / "backend" / ".env",  # backward compat
