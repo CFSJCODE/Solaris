@@ -93,6 +93,18 @@ OBJECTS = (
         ),
     ),
     ("router", "roteador", ("router", "roteador", "roteador wi-fi")),
+    (
+        "google nest mini",
+        "Google Nest Mini",
+        (
+            "google nest mini",
+            "nest mini",
+            "google nest",
+            "smart speaker",
+            "caixa de som inteligente",
+            "assistente de voz",
+        ),
+    ),
     ("lamp", "luminária", ("lamp", "luminária", "abajur")),
     ("shelf", "prateleira", ("shelf", "prateleira", "estante")),
 )
