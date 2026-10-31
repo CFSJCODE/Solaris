@@ -11,7 +11,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Falha ao preparar modelo de visão." }
     Push-Location $EngineDir
     try {
-        & $Python -m PyInstaller engine.spec --noconfirm --workpath (Join-Path $Root "storage\build-engine-0.5.4")
+        & $Python -m PyInstaller engine.spec --noconfirm --workpath (Join-Path $Root "storage\build-engine-0.5.5")
         if ($LASTEXITCODE -ne 0) { throw "Falha ao compilar o engine." }
     } finally { Pop-Location }
     $BinDir = Join-Path $Root "src-tauri\binaries"

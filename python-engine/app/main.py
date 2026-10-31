@@ -269,7 +269,25 @@ async def handle_learning_train_now(req: dict) -> None:
     _write({"id": req["id"], "type": "learning_result", **result})
 
 
+async def handle_clusters_list(req: dict) -> None:
+    from app.vision.clusters import list_clusters
+
+    result = await asyncio.to_thread(list_clusters, req.get("project_id"))
+    _write({"id": req["id"], "type": "clusters_result", **result})
+
+
+async def handle_cluster_rename(req: dict) -> None:
+    from app.vision.clusters import rename_cluster
+
+    result = await asyncio.to_thread(
+        rename_cluster, req.get("project_id"), req["cluster_id"], req.get("name")
+    )
+    _write({"id": req["id"], "type": "cluster_rename_result", **result})
+
+
 _HANDLERS: dict[str, Any] = {
+    "clusters_list": handle_clusters_list,
+    "cluster_rename": handle_cluster_rename,
     "learning_incorporate": handle_learning_incorporate,
     "learning_train_now": handle_learning_train_now,
     "learning_status": handle_learning_status,

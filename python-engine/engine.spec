@@ -5,13 +5,21 @@ from pathlib import Path
 
 block_cipher = None
 
+# Detector suplementar Open Images V7: entra no pacote só se foi exportado
+# (scripts/export_oiv7.py); sem ele o app segue só com o YOLO principal.
+_oiv7 = [
+    (str(p), 'models')
+    for p in (Path('../storage/models/yolov8n-oiv7.onnx'), Path('../storage/models/yolov8n-oiv7.labels.json'))
+    if p.is_file()
+]
+
 a = Analysis(
     ['app/main.py'],
     pathex=['.'],
     binaries=[],
     # Nunca empacotar o .env: as chaves ficariam dentro do executável distribuído.
     datas=[('../storage/models/yolov8n.onnx', 'models'), ('../storage/models/yolo26x.onnx', 'models'),
-           ('app/vision/*.py', 'learning_code/app/vision')],
+           ('app/vision/*.py', 'learning_code/app/vision')] + _oiv7,
     hiddenimports=[
         'anthropic',
         'httpx',

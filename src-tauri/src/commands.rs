@@ -87,6 +87,39 @@ pub async fn learning_train_now(
 }
 
 #[tauri::command]
+pub async fn vision_clusters(
+    db: State<'_, DbState>,
+    engine: State<'_, EngineState>,
+    project_id: Option<i64>,
+) -> Result<Value, String> {
+    db.check_project(project_id).map_err(|e| e.to_string())?;
+    engine_request(
+        engine.inner().clone(),
+        json!({"type":"clusters_list","project_id":project_id}),
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn vision_cluster_rename(
+    db: State<'_, DbState>,
+    engine: State<'_, EngineState>,
+    project_id: Option<i64>,
+    cluster_id: i64,
+    name: Option<String>,
+) -> Result<Value, String> {
+    db.check_project(project_id).map_err(|e| e.to_string())?;
+    if name.as_ref().is_some_and(|n| n.chars().count() > 60) {
+        return Err("Nome com no máximo 60 caracteres.".into());
+    }
+    engine_request(
+        engine.inner().clone(),
+        json!({"type":"cluster_rename","project_id":project_id,"cluster_id":cluster_id,"name":name}),
+    )
+    .await
+}
+
+#[tauri::command]
 pub async fn vision_detect(
     db: State<'_, DbState>,
     engine: State<'_, EngineState>,
