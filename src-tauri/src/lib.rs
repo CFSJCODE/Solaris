@@ -58,6 +58,8 @@ pub fn run() {
             commands::move_conversation,
             commands::engine_status,
             commands::learning_status,
+            commands::vision_clusters,
+            commands::vision_cluster_rename,
             commands::learning_incorporate,
             commands::learning_train_now,
             commands::vision_detect,

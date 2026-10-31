@@ -1316,3 +1316,40 @@ textarea.workspace-input {
   font-size: 1.25rem;
   font-weight: 600;
 }
+.sol-discovery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-3);
+}
+.sol-discovery summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.sol-discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sol-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sol-discovery-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-2);
+  padding: var(--sol-space-3);
+  border: 1px solid var(--sol-border);
+  border-radius: var(--sol-radius-md);
+}
+.sol-discovery-card img,
+.sol-discovery-empty {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  border-radius: var(--sol-radius-sm);
+  background: var(--sol-bg);
+}
+.sol-discovery-card span {
+  color: var(--sol-text-muted);
+  font-size: 0.875rem;
+}
