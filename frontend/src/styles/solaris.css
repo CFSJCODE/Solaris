@@ -1334,40 +1334,101 @@ textarea.workspace-input {
   font-size: 1.25rem;
   font-weight: 600;
 }
-.sol-discovery {
+.sol-warn-value { color: var(--sol-warn, #e07b39); }
+
+/* ── Active training card ── */
+.sol-train-card {
+  background: var(--sol-surface-raised, color-mix(in srgb, var(--sol-accent) 8%, var(--sol-surface)));
+  border: 1px solid color-mix(in srgb, var(--sol-accent) 30%, transparent);
+  border-radius: 12px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: var(--sol-space-3);
+  gap: 8px;
 }
-.sol-discovery summary {
-  cursor: pointer;
+.sol-train-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sol-train-label { font-weight: 600; }
+.sol-train-loss  { font-size: 0.875rem; color: var(--sol-text-muted); font-variant-numeric: tabular-nums; }
+.sol-progress-bar {
+  height: 6px;
+  background: color-mix(in srgb, var(--sol-accent) 20%, var(--sol-border));
+  border-radius: 99px;
+  overflow: hidden;
+}
+.sol-progress-fill {
+  height: 100%;
+  background: var(--sol-accent);
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+.sol-progress-label { font-size: 0.8rem; color: var(--sol-text-muted); font-variant-numeric: tabular-nums; }
+
+/* ── Badges ── */
+.sol-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
 }
-.sol-discovery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--sol-space-4);
+.sol-badge-active { background: color-mix(in srgb, var(--sol-accent) 20%, transparent); color: var(--sol-accent); }
+.sol-badge-queue  { background: color-mix(in srgb, #8888ff 15%, transparent); color: #8888ff; }
+.sol-badge-ok     { background: color-mix(in srgb, #4caf50 20%, transparent); color: #4caf50; }
+.sol-badge-warn   { background: color-mix(in srgb, #e07b39 15%, transparent); color: #e07b39; }
+.sol-badge-idle   { background: color-mix(in srgb, var(--sol-text-muted) 15%, transparent); color: var(--sol-text-muted); }
+
+/* ── Queue ── */
+.sol-queue h3, .sol-discoveries h3, .sol-doubts h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--sol-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sol-queue ul, .sol-discoveries ul, .sol-doubts ul, .sol-event-list {
+  list-style: none;
   margin: 0;
   padding: 0;
-  list-style: none;
-}
-.sol-discovery-card {
   display: flex;
   flex-direction: column;
-  gap: var(--sol-space-2);
-  padding: var(--sol-space-3);
-  border: 1px solid var(--sol-border);
-  border-radius: var(--sol-radius-md);
+  gap: 6px;
 }
-.sol-discovery-card img,
-.sol-discovery-empty {
-  width: 96px;
-  height: 96px;
-  object-fit: contain;
-  border-radius: var(--sol-radius-sm);
-  background: var(--sol-bg);
-}
-.sol-discovery-card span {
-  color: var(--sol-text-muted);
+.sol-queue-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-size: 0.875rem;
 }
+.sol-queue-model { font-weight: 600; }
+.sol-queue-msg   { color: var(--sol-text-muted); }
+
+/* ── Discoveries & doubts ── */
+.sol-discoveries li, .sol-doubts .sol-rejected-job {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.875rem;
+}
+.sol-metric-delta { margin: 0; font-size: 0.875rem; font-weight: 600; }
+.sol-metric-up    { color: #4caf50; }
+.sol-metric-down  { color: #e07b39; }
+.sol-rejected-job { padding: 6px 0; border-top: 1px solid var(--sol-border); }
+
+/* ── Event feed ── */
+.sol-events-details { font-size: 0.875rem; }
+.sol-events-details summary { cursor: pointer; color: var(--sol-text-muted); user-select: none; }
+.sol-event-list li { display: flex; gap: 10px; padding: 3px 0; }
+.sol-time { color: var(--sol-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+
+/* ── Misc ── */
+.sol-status-msg { color: var(--sol-text-muted); margin: 0; }
+.sol-muted      { color: var(--sol-text-muted); }
+.sol-feedback   { color: var(--sol-accent); margin: 0; }
