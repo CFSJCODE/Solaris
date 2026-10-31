@@ -1,4 +1,6 @@
 """Physical camera plus autonomous model updates, isolated from installed model pointers."""
+# torch/ultralytics/transformers/psutil existem só no runtime de aprendizado separado (%APPDATA%), não no venv do engine.
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 import base64,hashlib,json,os,queue,shutil,sqlite3,subprocess,sys,threading,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -45,9 +47,11 @@ def main():
     environment={**os.environ,'SOLARIS_STORAGE':str(target),'PYTHONUTF8':'1'}
     errors=(target/'engine-errors.log').open('w',encoding='utf-8')
     process=subprocess.Popen([str(ROOT/'python-engine/.venv/Scripts/python.exe'),str(ROOT/'python-engine/app/main.py')],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=errors,text=True,encoding='utf-8',env=environment,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+    assert process.stdin is not None and process.stdout is not None
+    stdin,stdout=process.stdin,process.stdout
     responses=queue.Queue()
     def reader():
-        for line in process.stdout:
+        for line in stdout:
             try:responses.put(json.loads(line))
             except ValueError:responses.put({'type':'error','message':'Saída fora do protocolo.'})
     threading.Thread(target=reader,daemon=True).start()
@@ -55,7 +59,7 @@ def main():
     def request(body):
         nonlocal sequence
         sequence+=1
-        process.stdin.write(json.dumps({'id':str(sequence),**body})+'\n');process.stdin.flush()
+        stdin.write(json.dumps({'id':str(sequence),**body})+'\n');stdin.flush()
         value=responses.get(timeout=40)
         if value.get('type')=='error':raise RuntimeError(value.get('message'))
         assert value['id']==str(sequence),value

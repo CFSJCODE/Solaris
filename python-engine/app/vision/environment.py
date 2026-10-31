@@ -55,7 +55,7 @@ class Context:
             if box.get('stable') and box.get('confidence',0)>=.5:
                 idx=box.get('class_id',-1)
                 name=LABELS_EN[idx].replace('_',' ') if 0<=idx<len(LABELS_EN) else {'gaveteiro':'chest of drawers','guarda-roupa':'wardrobe','mesa de cabeceira':'nightstand','escrivaninha':'desk'}.get(box['label'],box['label'])
-                name=canonical_object_name(name)
+                name=canonical_object_name(str(name))
                 names.add(name)
         for name in names:
             self.evidence[name]=min(5,self.evidence.get(name,0)+1)

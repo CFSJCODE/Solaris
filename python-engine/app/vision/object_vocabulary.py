@@ -60,7 +60,7 @@ _ALIASES = {
 EXTRA = tuple((canonical, label_pt) for canonical, label_pt, _ in OBJECTS)
 
 
-def canonical_object_name(label):
+def canonical_object_name(label: str) -> str:
     """Return a stable English class name for a known Portuguese/English alias."""
     stripped = label.strip()
     return _ALIASES.get(_normalize(stripped), stripped)

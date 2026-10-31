@@ -1,4 +1,6 @@
 """CPU learning service. Launched by the engine, never writes to its stdout pipe."""
+# torch/ultralytics/transformers/psutil existem só no runtime de aprendizado separado (%APPDATA%), não no venv do engine.
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 
 # Importa as bibliotecas necessárias
 from __future__ import annotations
@@ -212,12 +214,14 @@ class Teachers:
         if self.owl is None:
             self.processor = Owlv2Processor.from_pretrained(self.config['owl'],local_files_only=True)
             self.owl = Owlv2ForObjectDetection.from_pretrained(self.config['owl'],local_files_only=True).eval()
+        processor,owl = self.processor,self.owl
+        assert processor is not None and owl is not None
         names=names or [name for name,_ in EXTRA]
         queries = [[f'a photo of a {name}' for name in names]]
-        inputs = self.processor(text=queries,images=Image.fromarray(image[:,:,::-1]),return_tensors='pt')
+        inputs = processor(text=queries,images=Image.fromarray(image[:,:,::-1]),return_tensors='pt')
         with torch.inference_mode():
-            output = self.owl(**inputs)
-        detected = self.processor.post_process_object_detection(output,target_sizes=torch.tensor([image.shape[:2]]),threshold=.25)[0]
+            output = owl(**inputs)
+        detected = processor.post_process_object_detection(output,target_sizes=torch.tensor([image.shape[:2]]),threshold=.25)[0]
         result = []
         width = image.shape[1]
         for box,index,score in zip(detected['boxes'].tolist(),detected['labels'].tolist(),detected['scores'].tolist()):
@@ -502,7 +506,7 @@ def train(key,config,model='yolo26x',force=False,request_id=None):
     configure_cpu()
     started = time.monotonic()
     weight_hashes={}
-    progress={'batch':0,'last':0}
+    progress={'batch':0,'last':0.0}
     def before_training(trainer):weight_hashes['before']=trainable_digest(trainer.model)
     def after_training(trainer):weight_hashes['after']=trainable_digest(trainer.model)
     class Paused(Exception):
@@ -590,7 +594,7 @@ def train(key,config,model='yolo26x',force=False,request_id=None):
         import numpy as np
         options = ort.SessionOptions();options.intra_op_num_threads=2
         session = ort.InferenceSession(str(exported),sess_options=options,providers=['CPUExecutionProvider'])
-        output = session.run(None,{session.get_inputs()[0].name:np.zeros((1,3,640,640),np.float32)})[0]
+        output = np.asarray(session.run(None,{session.get_inputs()[0].name:np.zeros((1,3,640,640),np.float32)})[0])
         if output.shape!=(1,300,6) or not np.isfinite(output).all():
             raise ValueError('Exportação ONNX incompatível; modelo anterior preservado.')
         from app.vision.detector import LABELS

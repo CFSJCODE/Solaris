@@ -204,7 +204,7 @@ def start_worker():
         # Source files are bundled as data; PyTorch never enters the chat executable.
         worker = Path(__file__).with_name('learning_worker.py')
         if getattr(sys, 'frozen', False):
-            worker = Path(sys._MEIPASS)/'learning_code'/'app'/'vision'/'learning_worker.py'
+            worker = Path(getattr(sys, '_MEIPASS'))/'learning_code'/'app'/'vision'/'learning_worker.py'
         if _worker_log:
             _worker_log.close()
         _worker_log = (root()/'worker.log').open('a',encoding='utf-8')

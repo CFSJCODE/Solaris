@@ -1,4 +1,6 @@
 """Exercise the real pipe engine/worker lifecycle in isolated application storage."""
+# torch/ultralytics/transformers/psutil existem só no runtime de aprendizado separado (%APPDATA%), não no venv do engine.
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 import base64
 import json
 import os
@@ -30,12 +32,15 @@ def main():
         log=(target/'engine-errors.log').open('w',encoding='utf-8')
         process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=log,
             text=True,encoding='utf-8',env=environment,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        assert process.stdin is not None and process.stdout is not None
+        stdin,stdout=process.stdin,process.stdout
         def request(value):
-            process.stdin.write(json.dumps({'id':'test',**value})+'\n');process.stdin.flush()
-            response=json.loads(process.stdout.readline())
+            stdin.write(json.dumps({'id':'test',**value})+'\n');stdin.flush()
+            response=json.loads(stdout.readline())
             if response.get('type')=='error':
                 raise RuntimeError(response.get('message'))
             return response
+        children=None
         try:
             state=request({'type':'learning_status'})
             assert state['runtime_ready'] and state['worker_running'],state
@@ -75,7 +80,7 @@ def main():
             process.stdin.close()
             process.wait(timeout=20)
             log.close()
-            if 'children' in locals():
+            if children is not None:
                 _,alive=psutil.wait_procs(children,timeout=10)
                 assert not [p for p in alive if p.is_running()],'Processo de aprendizado permaneceu órfão.'
 

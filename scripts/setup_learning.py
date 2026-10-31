@@ -1,4 +1,6 @@
 """Provision the optional local learning runtime; no credentials or cloud services."""
+# torch/ultralytics/transformers/psutil existem só no runtime de aprendizado separado (%APPDATA%), não no venv do engine.
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 from __future__ import annotations
 import argparse
 import hashlib

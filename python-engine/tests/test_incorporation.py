@@ -161,6 +161,7 @@ class IncorporationTests(unittest.TestCase):
                     (sample_id,'general','session',1,sample_id,'samples/general/'+sample_id+'.jpg',1,'test','[]',None,'pending'))
             self.assertIsNone(next_sample(conn,'general',{'sample_id':None}))
             selected=next_sample(conn,'general',{'sample_id':'reviewed-frame'})
+        assert selected is not None
         self.assertEqual(selected['id'],'reviewed-frame')
 
     def test_complete_review_confirms_all_boxes_and_changed_labels_invalidate_dataset(self):
@@ -199,11 +200,13 @@ class IncorporationTests(unittest.TestCase):
         self.assertIsNone(merge_human(None,human))
         auto=[{'name':'suitcase','xyxy':[0,0,20,20]}, {'name':'tv','xyxy':[40,0,60,20]}]
         merged=merge_human(auto,human)
+        assert merged is not None
         self.assertEqual([b['name'] for b in merged],['tv','gaveteiro'])
     def test_context_does_not_modify_detection_or_hallucinate_and_expires(self):
         scene=Scene(Path(self.folder.name)/'scene.json')
         box={'class_id':59,'label':'cama','confidence':.8,'x':0.,'y':0.,'width':40.,'height':30.}
         frame={'width':64,'height':64,'detections':[box]}
+        result:dict={}
         for i in range(8):result=scene.observe(copy.deepcopy(frame),100+i)
         self.assertEqual(result['environment']['context']['hypothesis'],'quarto')
         self.assertIn('wardrobe',result['environment']['context']['queries'])

@@ -1,4 +1,6 @@
 """Real CPU training/export smoke test, isolated from active model versions."""
+# torch/ultralytics/transformers/psutil existem só no runtime de aprendizado separado (%APPDATA%), não no venv do engine.
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 from __future__ import annotations
 import gc
 import json
@@ -84,7 +86,7 @@ def main():
     exported=Path(candidate.export(format='onnx',imgsz=640,nms=False,dynamic=False,simplify=False,opset=17,device='cpu'))
     options=ort.SessionOptions();options.intra_op_num_threads=2
     session=ort.InferenceSession(str(exported),sess_options=options,providers=['CPUExecutionProvider'])
-    output=session.run(None,{session.get_inputs()[0].name:sample})[0]
+    output=np.asarray(session.run(None,{session.get_inputs()[0].name:sample})[0])
     if output.shape!=(1,300,6) or not np.isfinite(output).all():
         raise ValueError('Saída ONNX divergente.')
     measurements['export']={'shape':list(output.shape),'sha256':digest(exported),'active':False}

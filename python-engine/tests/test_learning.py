@@ -20,7 +20,9 @@ class LearningTests(unittest.TestCase):
         box={'name':'suitcase','score':.9,'xyxy':[0,0,10,10]}
         self.assertIsNone(verified_labels([box],[]))
         self.assertIsNone(verified_labels([box],[{**box,'name':'cardboard box'}]))
-        self.assertEqual(len(verified_labels([box],[box])),1)
+        verified=verified_labels([box],[box])
+        assert verified is not None
+        self.assertEqual(len(verified),1)
 
     def test_retention_preserves_active_previous_and_recent_runs(self):
         with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'SOLARIS_STORAGE':folder}):
