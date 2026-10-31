@@ -197,7 +197,136 @@ export default function LearningPanel({
           )}
         </>
       )}
+      <DiscoveryPanel projectId={projectId} />
     </section>
+  )
+}
+
+interface VisualCluster {
+  id: number
+  size: number
+  views: number
+  sessions: number
+  name: string | null
+  suggestion: string
+  suggestion_share: number
+  stable: boolean
+  thumbnail: string | null
+}
+
+interface ClusterListing {
+  clusters: VisualCluster[]
+  regions: number
+  uncertain: number
+  stable_views: number
+  stable_sessions: number
+}
+
+function DiscoveryPanel({ projectId }: { projectId: number | null }) {
+  const [listing, setListing] = useState<ClusterListing | null>(null)
+  const [drafts, setDrafts] = useState<Record<number, string>>({})
+  const [error, setError] = useState("")
+  useEffect(() => {
+    let current = true
+    setListing(null)
+    async function refresh() {
+      try {
+        const value = await invoke<ClusterListing>("vision_clusters", { projectId })
+        if (current) {
+          setListing(value)
+          setError("")
+        }
+      } catch (err) {
+        if (current) setError(String(err))
+      }
+    }
+    void refresh()
+    const timer = setInterval(() => void refresh(), 10000)
+    return () => {
+      current = false
+      clearInterval(timer)
+    }
+  }, [projectId])
+  async function rename(cluster: VisualCluster) {
+    const name = (drafts[cluster.id] ?? cluster.name ?? "").trim()
+    try {
+      await invoke("vision_cluster_rename", {
+        projectId,
+        clusterId: cluster.id,
+        name: name || null,
+      })
+      setListing(await invoke<ClusterListing>("vision_clusters", { projectId }))
+      setError("")
+    } catch (err) {
+      setError(String(err))
+    }
+  }
+  return (
+    <details className="sol-discovery">
+      <summary>Objetos descobertos{listing ? ` · ${listing.clusters.length} grupos` : ""}</summary>
+      <p>
+        Sem rotular nada, o aprendizado recorta as regiões detectadas, extrai a aparência com o CLIP
+        e agrupa objetos parecidos. Um grupo fica estável com {listing?.stable_views ?? 10} vistas
+        independentes em pelo menos {listing?.stable_sessions ?? 2} sessões; quadros seguidos contam
+        como uma vista. Objetos muito semelhantes podem ser unidos. Dar nome é opcional.
+      </p>
+      {error && (
+        <p role="alert" className="sol-error">
+          {error}
+        </p>
+      )}
+      {listing && listing.clusters.length === 0 && (
+        <p role="status">
+          Nenhum grupo ainda ({listing.regions} regiões analisadas, {listing.uncertain} incertas).
+          Os grupos surgem enquanto a câmera coleta exemplos e o modelo CLIP está instalado.
+        </p>
+      )}
+      {!!listing?.clusters.length && (
+        <ul className="sol-discovery-grid" aria-label="Grupos de objetos descobertos">
+          {listing.clusters.map((cluster) => (
+            <li key={cluster.id} className="sol-discovery-card">
+              {cluster.thumbnail ? (
+                <img src={`data:image/jpeg;base64,${cluster.thumbnail}`} alt="" />
+              ) : (
+                <div className="sol-discovery-empty" aria-hidden="true" />
+              )}
+              <strong>{cluster.name || `Grupo ${cluster.id}`}</strong>
+              <span>
+                {cluster.views} vistas · {cluster.sessions} sessões ·{" "}
+                {cluster.stable ? "estável" : "em formação"}
+              </span>
+              {cluster.suggestion && (
+                <span>
+                  Sugestão do detector: {cluster.suggestion} (
+                  {Math.round(cluster.suggestion_share * 100)}%)
+                </span>
+              )}
+              <form
+                className="sol-toolbar"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  void rename(cluster)
+                }}
+              >
+                <input
+                  className="project-input"
+                  aria-label={`Nome do grupo ${cluster.id}`}
+                  maxLength={60}
+                  placeholder="Nome opcional"
+                  value={drafts[cluster.id] ?? cluster.name ?? ""}
+                  onChange={(event) =>
+                    setDrafts((value) => ({ ...value, [cluster.id]: event.target.value }))
+                  }
+                />
+                <button className="btn-ghost" type="submit">
+                  Salvar
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </details>
   )
 }
 

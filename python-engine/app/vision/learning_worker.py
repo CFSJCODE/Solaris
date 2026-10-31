@@ -1157,6 +1157,7 @@ def main():
         if digest(Path(config["reference"]) / relative) != expected:
             raise ValueError("Referência de avaliação foi alterada; serviço não iniciado.")
     teachers = None
+    encoder = None
     with store.connect() as conn:
         conn.execute(
             "UPDATE jobs SET state='interrupted',message='Processo anterior interrompido; checkpoint preservado.' WHERE state='training'"
@@ -1290,6 +1291,13 @@ def main():
                             "UPDATE settings SET message=? WHERE scope=?",
                             ("Verificando exemplos com YOLO26x, ByteTrack e OWLv2.", key),
                         )
+                # Descoberta visual sem rótulo: CLIP + agrupamento incremental, em lotes pequenos.
+                if config.get("clip"):
+                    from app.vision import clusters
+
+                    if encoder is None:
+                        encoder = clusters.Encoder(config["clip"])
+                    clusters.process_pending(key, encoder, limit=2)
                 with store.connect() as conn:
                     request = conn.execute(
                         "SELECT * FROM training_requests WHERE scope=? AND state IN ('queued','verifying','paused') ORDER BY created LIMIT 1",
@@ -1329,6 +1337,7 @@ def main():
                 )
                 if request or automatic:
                     teachers = None  # Release teacher RAM before loading training model.
+                    encoder = None
                     import gc
 
                     gc.collect()
