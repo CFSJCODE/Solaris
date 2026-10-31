@@ -3,29 +3,91 @@
 from dataclasses import dataclass
 
 CODING_KEYWORDS = {
-    "código", "code", "python", "javascript", "typescript", "rust", "go", "java", "c++",
-    "função", "function", "bug", "erro", "error", "debug", "implementar", "implement",
-    "algoritmo", "algorithm", "classe", "class", "método", "method", "api", "endpoint",
-    "sql", "query", "regex", "script", "programa", "program",
+    "código",
+    "code",
+    "python",
+    "javascript",
+    "typescript",
+    "rust",
+    "go",
+    "java",
+    "c++",
+    "função",
+    "function",
+    "bug",
+    "erro",
+    "error",
+    "debug",
+    "implementar",
+    "implement",
+    "algoritmo",
+    "algorithm",
+    "classe",
+    "class",
+    "método",
+    "method",
+    "api",
+    "endpoint",
+    "sql",
+    "query",
+    "regex",
+    "script",
+    "programa",
+    "program",
 }
 
 REASONING_KEYWORDS = {
-    "analisa", "analyze", "explica", "explain", "raciocina", "reasoning",
-    "descreve", "describe", "compare", "comparar", "pros", "cons",
-    "decisão", "decision", "estratégia", "strategy", "avalia", "evaluate",
-    "resumo", "summary", "sumário", "sintetiza", "synthesize",
-    "diferença", "difference", "vantagem", "advantage",
+    "analisa",
+    "analyze",
+    "explica",
+    "explain",
+    "raciocina",
+    "reasoning",
+    "descreve",
+    "describe",
+    "compare",
+    "comparar",
+    "pros",
+    "cons",
+    "decisão",
+    "decision",
+    "estratégia",
+    "strategy",
+    "avalia",
+    "evaluate",
+    "resumo",
+    "summary",
+    "sumário",
+    "sintetiza",
+    "synthesize",
+    "diferença",
+    "difference",
+    "vantagem",
+    "advantage",
 }
 
 QUICK_KEYWORDS = {
-    "olá", "oi", "hi", "hello", "obrigado", "thanks", "thank",
-    "ok", "sim", "não", "yes", "no", "tudo bem", "certo", "entendi",
+    "olá",
+    "oi",
+    "hi",
+    "hello",
+    "obrigado",
+    "thanks",
+    "thank",
+    "ok",
+    "sim",
+    "não",
+    "yes",
+    "no",
+    "tudo bem",
+    "certo",
+    "entendi",
 }
 
 
 @dataclass
 class ModelSelection:
-    provider: str   # "anthropic" | "openrouter" | ""
+    provider: str  # "anthropic" | "openrouter" | ""
     model: str
     reason: str
 
@@ -57,9 +119,7 @@ def route(message: str, has_anthropic: bool, has_openrouter: bool) -> ModelSelec
     # Long messages or complex reasoning → Sonnet or best free
     if (tokens & REASONING_KEYWORDS) or len(message) > 500:
         if has_anthropic:
-            return ModelSelection(
-                "anthropic", "claude-sonnet-4-5-20250514", "complex reasoning"
-            )
+            return ModelSelection("anthropic", "claude-sonnet-4-5-20250514", "complex reasoning")
         return ModelSelection(
             "openrouter", "meta-llama/llama-3.1-8b-instruct:free", "reasoning fallback"
         )
@@ -67,6 +127,4 @@ def route(message: str, has_anthropic: bool, has_openrouter: bool) -> ModelSelec
     # Default
     if has_anthropic:
         return ModelSelection("anthropic", "claude-haiku-3-5-20251101", "default")
-    return ModelSelection(
-        "openrouter", "meta-llama/llama-3.1-8b-instruct:free", "default"
-    )
+    return ModelSelection("openrouter", "meta-llama/llama-3.1-8b-instruct:free", "default")

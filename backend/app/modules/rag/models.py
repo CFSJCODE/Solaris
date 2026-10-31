@@ -1,6 +1,6 @@
 """ORM models for RAG documents and chunks."""
 
-from sqlalchemy import String, Text, Integer, ForeignKey, DateTime, BigInteger
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -16,9 +16,7 @@ class Document(Base):
     mime_type: Mapped[str] = mapped_column(String(100), default="text/plain")
     size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     chunks: Mapped[list["Chunk"]] = relationship(
         back_populates="document", cascade="all, delete-orphan"

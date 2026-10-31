@@ -1,4 +1,4 @@
-﻿# Compila o engine de pipes e o instalador; não instala nem abre o app.
+# Compila o engine de pipes e o instalador; não instala nem abre o app.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
@@ -11,7 +11,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Falha ao preparar modelo de visão." }
     Push-Location $EngineDir
     try {
-        & $Python -m PyInstaller engine.spec --noconfirm --workpath (Join-Path $Root "storage\build-engine-0.5.3")
+        & $Python -m PyInstaller engine.spec --noconfirm --workpath (Join-Path $Root "storage\build-engine-0.5.4")
         if ($LASTEXITCODE -ne 0) { throw "Falha ao compilar o engine." }
     } finally { Pop-Location }
     $BinDir = Join-Path $Root "src-tauri\binaries"

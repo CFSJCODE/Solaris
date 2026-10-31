@@ -1,6 +1,7 @@
 """Pydantic schemas for the chat module."""
 
 from datetime import datetime
+
 from pydantic import BaseModel
 
 

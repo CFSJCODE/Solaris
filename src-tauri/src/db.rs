@@ -49,7 +49,8 @@ mod tests {
         let other = db.create_conversation("Outro", Some(b)).unwrap();
         let loose = db.create_conversation("Solta", None).unwrap();
         for id in [old, current, other, loose] {
-            db.add_message(id, "user", "calibração importante", None, None, None).unwrap();
+            db.add_message(id, "user", "calibração importante", None, None, None)
+                .unwrap();
         }
         assert_eq!(db.fts_search("calibracao", current, 3).unwrap().len(), 1);
         db.move_conversation(old, Some(b)).unwrap();
@@ -71,7 +72,10 @@ mod tests {
         migrate(&conn).unwrap();
         let db = DbState(Mutex::new(conn));
         assert_eq!(db.fts_search("historico", 2, 3).unwrap().len(), 1);
-        db.0.lock().unwrap().execute("UPDATE messages SET content='substituído' WHERE id=1", []).unwrap();
+        db.0.lock()
+            .unwrap()
+            .execute("UPDATE messages SET content='substituído' WHERE id=1", [])
+            .unwrap();
         assert!(db.fts_search("historico", 2, 3).unwrap().is_empty());
         assert_eq!(db.fts_search("substituido", 2, 3).unwrap().len(), 1);
         db.delete_conversation(1).unwrap();
@@ -86,30 +90,49 @@ mod tests {
         db.save_vision_sample(Some(project), "{}").unwrap();
         db.delete_project(project).unwrap();
         assert_eq!(db.list_conversations(None).unwrap().len(), 1);
-        assert_eq!(db.0.lock().unwrap().query_row("SELECT count(*) FROM vision_samples WHERE project_id IS NULL", [], |r| r.get::<_, i64>(0)).unwrap(), 1);
+        assert_eq!(
+            db.0.lock()
+                .unwrap()
+                .query_row(
+                    "SELECT count(*) FROM vision_samples WHERE project_id IS NULL",
+                    [],
+                    |r| r.get::<_, i64>(0)
+                )
+                .unwrap(),
+            1
+        );
     }
 
     #[test]
     fn training_revision_cannot_cross_projects_or_general_scope() {
-        let db=database();
-        let a=db.create_project("A",None).unwrap();
-        let b=db.create_project("B",None).unwrap();
-        let revision=db.save_vision_sample(Some(a),"{\"schema_version\":2}").unwrap();
-        assert!(db.vision_sample_payload(Some(a),revision).unwrap().contains("schema_version"));
-        assert!(db.vision_sample_payload(Some(b),revision).is_err());
-        assert!(db.vision_sample_payload(None,revision).is_err());
-        assert!(db.vision_sample_payload(Some(9999),revision).is_err());
+        let db = database();
+        let a = db.create_project("A", None).unwrap();
+        let b = db.create_project("B", None).unwrap();
+        let revision = db
+            .save_vision_sample(Some(a), "{\"schema_version\":2}")
+            .unwrap();
+        assert!(db
+            .vision_sample_payload(Some(a), revision)
+            .unwrap()
+            .contains("schema_version"));
+        assert!(db.vision_sample_payload(Some(b), revision).is_err());
+        assert!(db.vision_sample_payload(None, revision).is_err());
+        assert!(db.vision_sample_payload(Some(9999), revision).is_err());
     }
 
     #[test]
-    fn memory_receipts_survive_loading_the_conversation(){
-        let db=database();let conversation=db.create_conversation("Teste",None).unwrap();
-        let message=db.add_message(conversation,"assistant","Preparando",None,None,None).unwrap();
-        let report=serde_json::json!({"state":"failed","files":[],"detail":"Nenhum registro válido recebido."});
-        db.save_memory_report(message,&report,Some("Memória não gravada.")).unwrap();
-        let loaded=db.get_messages(conversation).unwrap();
-        assert_eq!(loaded[0].content,"Memória não gravada.");
-        assert_eq!(loaded[0].memory_report["state"],"failed");
+    fn memory_receipts_survive_loading_the_conversation() {
+        let db = database();
+        let conversation = db.create_conversation("Teste", None).unwrap();
+        let message = db
+            .add_message(conversation, "assistant", "Preparando", None, None, None)
+            .unwrap();
+        let report = serde_json::json!({"state":"failed","files":[],"detail":"Nenhum registro válido recebido."});
+        db.save_memory_report(message, &report, Some("Memória não gravada."))
+            .unwrap();
+        let loaded = db.get_messages(conversation).unwrap();
+        assert_eq!(loaded[0].content, "Memória não gravada.");
+        assert_eq!(loaded[0].memory_report["state"], "failed");
     }
 }
 
@@ -160,7 +183,8 @@ pub fn open(storage_dir: &std::path::Path) -> Result<Connection> {
 }
 
 fn migrate(conn: &Connection) -> Result<()> {
-    conn.execute_batch("
+    conn.execute_batch(
+        "
         CREATE TABLE IF NOT EXISTS projects (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             name        TEXT    NOT NULL,
@@ -229,8 +253,14 @@ fn migrate(conn: &Connection) -> Result<()> {
             chunk_count INTEGER NOT NULL DEFAULT 0,
             created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
         );
-    ")?;
-    if conn.query_row("SELECT count(*) FROM schema_migrations WHERE version=1", [], |r| r.get::<_, i64>(0))? == 0 {
+    ",
+    )?;
+    if conn.query_row(
+        "SELECT count(*) FROM schema_migrations WHERE version=1",
+        [],
+        |r| r.get::<_, i64>(0),
+    )? == 0
+    {
         conn.execute_batch("BEGIN; INSERT INTO messages_fts(messages_fts) VALUES ('rebuild'); INSERT INTO schema_migrations VALUES (1); COMMIT;")?;
     }
     crate::knowledge::migrate(conn)?;
@@ -240,16 +270,23 @@ fn migrate(conn: &Connection) -> Result<()> {
 // ── Project helpers ────────────────────────────────────────────────────────
 
 impl DbState {
-    pub fn vision_sample_payload(&self, project_id: Option<i64>, id:i64) -> Result<String> {
-        let conn=self.0.lock().unwrap();
-        validate_project(&conn,project_id)?;
-        conn.query_row("SELECT payload FROM vision_samples WHERE id=?1 AND project_id IS ?2",params![id,project_id],|row|row.get(0))
+    pub fn vision_sample_payload(&self, project_id: Option<i64>, id: i64) -> Result<String> {
+        let conn = self.0.lock().unwrap();
+        validate_project(&conn, project_id)?;
+        conn.query_row(
+            "SELECT payload FROM vision_samples WHERE id=?1 AND project_id IS ?2",
+            params![id, project_id],
+            |row| row.get(0),
+        )
     }
 
     pub fn save_vision_sample(&self, project_id: Option<i64>, payload: &str) -> Result<i64> {
         let conn = self.0.lock().unwrap();
         validate_project(&conn, project_id)?;
-        conn.execute("INSERT INTO vision_samples(project_id,payload) VALUES (?1,?2)", params![project_id,payload])?;
+        conn.execute(
+            "INSERT INTO vision_samples(project_id,payload) VALUES (?1,?2)",
+            params![project_id, payload],
+        )?;
         Ok(conn.last_insert_rowid())
     }
 
@@ -260,7 +297,10 @@ impl DbState {
         )?;
         let rows = stmt.query_map([], |row| {
             Ok(Project {
-                instructions: row.get(5)?, pinned: row.get(6)?, conversation_count: row.get(7)?, file_count: row.get(8)?,
+                instructions: row.get(5)?,
+                pinned: row.get(6)?,
+                conversation_count: row.get(7)?,
+                file_count: row.get(8)?,
                 id: row.get(0)?,
                 name: row.get(1)?,
                 description: row.get(2)?,
@@ -292,9 +332,18 @@ impl DbState {
     pub fn delete_project(&self, id: i64) -> Result<()> {
         let conn = self.0.lock().unwrap();
         let tx = conn.unchecked_transaction()?;
-        tx.execute("UPDATE conversations SET project_id=NULL WHERE project_id=?1", params![id])?;
-        tx.execute("UPDATE documents SET project_id=NULL WHERE project_id=?1", params![id])?;
-        tx.execute("UPDATE knowledge_files SET project_id=NULL WHERE project_id=?1", params![id])?;
+        tx.execute(
+            "UPDATE conversations SET project_id=NULL WHERE project_id=?1",
+            params![id],
+        )?;
+        tx.execute(
+            "UPDATE documents SET project_id=NULL WHERE project_id=?1",
+            params![id],
+        )?;
+        tx.execute(
+            "UPDATE knowledge_files SET project_id=NULL WHERE project_id=?1",
+            params![id],
+        )?;
         tx.execute("DELETE FROM projects WHERE id=?1", params![id])?;
         tx.commit()?;
         Ok(())
@@ -302,7 +351,12 @@ impl DbState {
 
     /// Full-text search across all messages excluding the current conversation.
     /// Returns up to `limit` content snippets from past conversations.
-    pub fn fts_search(&self, query: &str, exclude_conv_id: i64, limit: usize) -> Result<Vec<MemorySnippet>> {
+    pub fn fts_search(
+        &self,
+        query: &str,
+        exclude_conv_id: i64,
+        limit: usize,
+    ) -> Result<Vec<MemorySnippet>> {
         if query.trim().is_empty() {
             return Ok(vec![]);
         }
@@ -316,14 +370,17 @@ impl DbState {
              ORDER BY rank
              LIMIT ?3",
         )?;
-        let rows = stmt.query_map(
-            params![query, exclude_conv_id, limit as i64],
-            |row| Ok(MemorySnippet { conversation_id: row.get(0)?, title: row.get(1)?, content: row.get(2)? }),
-        )?;
+        let rows = stmt.query_map(params![query, exclude_conv_id, limit as i64], |row| {
+            Ok(MemorySnippet {
+                conversation_id: row.get(0)?,
+                title: row.get(1)?,
+                content: row.get(2)?,
+            })
+        })?;
         rows.collect()
     }
 
-// ── Conversation helpers ───────────────────────────────────────────────────
+    // ── Conversation helpers ───────────────────────────────────────────────────
 
     pub fn list_conversations(&self, project_id: Option<i64>) -> Result<Vec<Conversation>> {
         let conn = self.0.lock().unwrap();
@@ -356,7 +413,11 @@ impl DbState {
     pub fn move_conversation(&self, id: i64, project_id: Option<i64>) -> Result<()> {
         let conn = self.0.lock().unwrap();
         validate_project(&conn, project_id)?;
-        if conn.execute("UPDATE conversations SET project_id=?2 WHERE id=?1", params![id, project_id])? == 0 {
+        if conn.execute(
+            "UPDATE conversations SET project_id=?2 WHERE id=?1",
+            params![id, project_id],
+        )? == 0
+        {
             return Err(rusqlite::Error::QueryReturnedNoRows);
         }
         Ok(())
@@ -376,7 +437,7 @@ impl DbState {
         )?;
         let rows = stmt.query_map(params![conversation_id], |row| {
             Ok(Message {
-                memory_report:serde_json::from_str(&row.get::<_,String>(9)?).unwrap_or_default(),
+                memory_report: serde_json::from_str(&row.get::<_, String>(9)?).unwrap_or_default(),
                 sources: serde_json::from_str(&row.get::<_, String>(8)?).unwrap_or_default(),
                 id: row.get(0)?,
                 conversation_id: row.get(1)?,

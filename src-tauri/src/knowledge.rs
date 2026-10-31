@@ -16,34 +16,73 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
     fn db() -> DbState {
-        let c=Connection::open_in_memory().unwrap();
+        let c = Connection::open_in_memory().unwrap();
         c.execute_batch("PRAGMA foreign_keys=ON;CREATE TABLE projects(id INTEGER PRIMARY KEY,instructions TEXT DEFAULT '',pinned INTEGER DEFAULT 0,updated_at TEXT);CREATE TABLE messages(id INTEGER PRIMARY KEY);").unwrap();
-        migrate(&c).unwrap(); migrate(&c).unwrap();
+        migrate(&c).unwrap();
+        migrate(&c).unwrap();
         DbState(Mutex::new(c))
     }
     #[test]
     fn file_context_is_scoped_and_selected_files_cannot_cross_projects() {
-        let db=db();
-        db.0.lock().unwrap().execute_batch("INSERT INTO projects(id) VALUES (1),(2)").unwrap();
-        let a=db.store_file(Some(1),"contrato.md","text/plain",42,"","O prazo de entrega é 17 de dezembro.").unwrap();
-        let b=db.store_file(Some(2),"privado.md","text/plain",42,"","O prazo confidencial é 31 de janeiro.").unwrap();
-        assert_eq!(db.project_files(None).unwrap().len(),0);
-        let hits=db.file_context(Some(1),"qual o prazo de entrega",&[]).unwrap();
-        assert_eq!(hits.len(),1);assert!(hits[0].content.contains("17 de dezembro"));
-        assert!(db.file_context(Some(1),"prazo",&[b]).is_err());
-        assert!(db.read_file(b,Some(1)).is_err());
-        db.change_file(a,Some(1),Some(false)).unwrap();
-        assert!(db.file_context(Some(1),"prazo",&[]).unwrap().is_empty());
-        assert_eq!(db.file_context(Some(1),"",&[a]).unwrap().len(),1);
-        db.change_file(a,Some(1),None).unwrap();
-        assert!(db.file_context(Some(1),"prazo",&[]).unwrap().is_empty());
+        let db = db();
+        db.0.lock()
+            .unwrap()
+            .execute_batch("INSERT INTO projects(id) VALUES (1),(2)")
+            .unwrap();
+        let a = db
+            .store_file(
+                Some(1),
+                "contrato.md",
+                "text/plain",
+                42,
+                "",
+                "O prazo de entrega é 17 de dezembro.",
+            )
+            .unwrap();
+        let b = db
+            .store_file(
+                Some(2),
+                "privado.md",
+                "text/plain",
+                42,
+                "",
+                "O prazo confidencial é 31 de janeiro.",
+            )
+            .unwrap();
+        assert_eq!(db.project_files(None).unwrap().len(), 0);
+        let hits = db
+            .file_context(Some(1), "qual o prazo de entrega", &[])
+            .unwrap();
+        assert_eq!(hits.len(), 1);
+        assert!(hits[0].content.contains("17 de dezembro"));
+        assert!(db.file_context(Some(1), "prazo", &[b]).is_err());
+        assert!(db.read_file(b, Some(1)).is_err());
+        db.change_file(a, Some(1), Some(false)).unwrap();
+        assert!(db.file_context(Some(1), "prazo", &[]).unwrap().is_empty());
+        assert_eq!(db.file_context(Some(1), "", &[a]).unwrap().len(), 1);
+        db.change_file(a, Some(1), None).unwrap();
+        assert!(db.file_context(Some(1), "prazo", &[]).unwrap().is_empty());
     }
     #[test]
     fn unicode_context_is_bounded_and_fts_input_is_safe() {
-        let db=db();
-        let id=db.store_file(None,"memória.md","text/plain",42,"",&"ação técnica ".repeat(6000)).unwrap();
-        let hits=db.file_context(None,"*\" OR NEAR()",&[id]).unwrap();
-        assert!(hits.iter().map(|h|h.content.chars().count()).sum::<usize>()<=12000);
+        let db = db();
+        let id = db
+            .store_file(
+                None,
+                "memória.md",
+                "text/plain",
+                42,
+                "",
+                &"ação técnica ".repeat(6000),
+            )
+            .unwrap();
+        let hits = db.file_context(None, "*\" OR NEAR()", &[id]).unwrap();
+        assert!(
+            hits.iter()
+                .map(|h| h.content.chars().count())
+                .sum::<usize>()
+                <= 12000
+        );
         assert!(!hits.is_empty());
         assert!(!search_query("\"a\" OR * ").contains('*'));
     }
@@ -65,12 +104,20 @@ pub fn migrate(conn: &Connection) -> Result<()> {
         ("projects", "instructions", "TEXT NOT NULL DEFAULT ''"),
         ("projects", "pinned", "INTEGER NOT NULL DEFAULT 0"),
         ("messages", "sources_json", "TEXT NOT NULL DEFAULT '[]'"),
-        ("messages", "memory_report_json", "TEXT NOT NULL DEFAULT 'null'"),
+        (
+            "messages",
+            "memory_report_json",
+            "TEXT NOT NULL DEFAULT 'null'",
+        ),
     ] {
         let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
-        let columns = stmt.query_map([], |r| r.get::<_, String>(1))?.collect::<Result<Vec<_>>>()?;
+        let columns = stmt
+            .query_map([], |r| r.get::<_, String>(1))?
+            .collect::<Result<Vec<_>>>()?;
         if !columns.iter().any(|c| c == column) {
-            conn.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"))?;
+            conn.execute_batch(&format!(
+                "ALTER TABLE {table} ADD COLUMN {column} {definition}"
+            ))?;
         }
     }
     conn.execute_batch("
@@ -98,37 +145,68 @@ pub fn migrate(conn: &Connection) -> Result<()> {
 }
 
 pub fn search_query(text: &str) -> String {
-    let stop = ["para", "como", "qual", "quais", "sobre", "arquivo", "arquivos", "projeto", "voce", "você", "isso", "esta", "esse", "essa", "pelo", "pela", "pode", "usar", "leia", "with", "this", "that", "from", "what", "have"];
-    text.split(|c: char| !c.is_alphanumeric()).map(str::to_lowercase)
-        .filter(|w| w.chars().count() >= 3 && !stop.contains(&w.as_str())).take(24)
-        .map(|w| format!("\"{w}\" ")).collect::<Vec<_>>().join(" OR ")
+    let stop = [
+        "para", "como", "qual", "quais", "sobre", "arquivo", "arquivos", "projeto", "voce", "você",
+        "isso", "esta", "esse", "essa", "pelo", "pela", "pode", "usar", "leia", "with", "this",
+        "that", "from", "what", "have",
+    ];
+    text.split(|c: char| !c.is_alphanumeric())
+        .map(str::to_lowercase)
+        .filter(|w| w.chars().count() >= 3 && !stop.contains(&w.as_str()))
+        .take(24)
+        .map(|w| format!("\"{w}\" "))
+        .collect::<Vec<_>>()
+        .join(" OR ")
 }
 
 impl DbState {
     pub fn project_scope(&self, conversation_id: i64) -> Result<Option<i64>> {
-        self.0.lock().unwrap().query_row("SELECT project_id FROM conversations WHERE id=?1", [conversation_id], |r| r.get(0))
+        self.0.lock().unwrap().query_row(
+            "SELECT project_id FROM conversations WHERE id=?1",
+            [conversation_id],
+            |r| r.get(0),
+        )
     }
 
     pub fn check_project(&self, id: Option<i64>) -> Result<()> {
         if let Some(id) = id {
-            self.0.lock().unwrap().query_row("SELECT id FROM projects WHERE id=?1", [id], |_| Ok(()))?;
+            self.0.lock().unwrap().query_row(
+                "SELECT id FROM projects WHERE id=?1",
+                [id],
+                |_| Ok(()),
+            )?;
         }
         Ok(())
     }
 
     pub fn project_instructions(&self, id: Option<i64>) -> Result<String> {
         match id {
-            Some(id) => self.0.lock().unwrap().query_row("SELECT instructions FROM projects WHERE id=?1", [id], |r| r.get(0)),
+            Some(id) => self.0.lock().unwrap().query_row(
+                "SELECT instructions FROM projects WHERE id=?1",
+                [id],
+                |r| r.get(0),
+            ),
             None => Ok(String::new()),
         }
     }
 
     pub fn update_project_settings(&self, id: i64, instructions: &str, pinned: bool) -> Result<()> {
-        self.0.lock().unwrap().execute("UPDATE projects SET instructions=?2,pinned=?3,updated_at=datetime('now') WHERE id=?1", params![id,instructions,pinned])?;
+        self.0.lock().unwrap().execute(
+            "UPDATE projects SET instructions=?2,pinned=?3,updated_at=datetime('now') WHERE id=?1",
+            params![id, instructions, pinned],
+        )?;
         Ok(())
     }
 
-    pub fn store_file(&self, project_id: Option<i64>, filename: &str, mime_type: &str, byte_size: i64, original: &str, text: &str) -> Result<i64> {
+    pub fn store_file(
+        &self,
+        project_id: Option<i64>,
+        filename: &str,
+        mime_type: &str,
+        byte_size: i64,
+        original: &str,
+        text: &str,
+    ) -> Result<i64> {
         self.check_project(project_id)?;
         let conn = self.0.lock().unwrap();
         let tx = conn.unchecked_transaction()?;
@@ -136,10 +214,15 @@ impl DbState {
         let id = tx.last_insert_rowid();
         let chars: Vec<char> = text.chars().collect();
         for (index, start) in (0..chars.len()).step_by(1300).enumerate() {
-            let content: String = chars[start..(start+1500).min(chars.len())].iter().collect();
+            let content: String = chars[start..(start + 1500).min(chars.len())]
+                .iter()
+                .collect();
             tx.execute("INSERT INTO knowledge_chunks(document_id,chunk_index,filename,content) VALUES(?1,?2,?3,?4)",params![id,index as i64,filename,content])?;
         }
-        tx.execute("UPDATE projects SET updated_at=datetime('now') WHERE id=?1", [project_id])?;
+        tx.execute(
+            "UPDATE projects SET updated_at=datetime('now') WHERE id=?1",
+            [project_id],
+        )?;
         tx.commit()?;
         Ok(id)
     }
@@ -147,28 +230,64 @@ impl DbState {
     pub fn project_files(&self, project_id: Option<i64>) -> Result<Vec<ProjectFile>> {
         let conn = self.0.lock().unwrap();
         let mut stmt = conn.prepare("SELECT id,filename,mime_type,byte_size,enabled,created_at,(SELECT count(*) FROM knowledge_chunks WHERE document_id=f.id) FROM knowledge_files f WHERE project_id IS ?1 ORDER BY id DESC")?;
-        let rows = stmt.query_map([project_id], |r| Ok(ProjectFile { id:r.get(0)?,filename:r.get(1)?,mime_type:r.get(2)?,byte_size:r.get(3)?,enabled:r.get(4)?,created_at:r.get(5)?,chunk_count:r.get(6)? }))?;
+        let rows = stmt.query_map([project_id], |r| {
+            Ok(ProjectFile {
+                id: r.get(0)?,
+                filename: r.get(1)?,
+                mime_type: r.get(2)?,
+                byte_size: r.get(3)?,
+                enabled: r.get(4)?,
+                created_at: r.get(5)?,
+                chunk_count: r.get(6)?,
+            })
+        })?;
         rows.collect()
     }
 
     pub fn read_file(&self, id: i64, project_id: Option<i64>) -> Result<String> {
-        self.0.lock().unwrap().query_row("SELECT extracted_text FROM knowledge_files WHERE id=?1 AND project_id IS ?2", params![id,project_id], |r| r.get(0))
+        self.0.lock().unwrap().query_row(
+            "SELECT extracted_text FROM knowledge_files WHERE id=?1 AND project_id IS ?2",
+            params![id, project_id],
+            |r| r.get(0),
+        )
     }
 
-    pub fn change_file(&self, id: i64, project_id: Option<i64>, enabled: Option<bool>) -> Result<()> {
+    pub fn change_file(
+        &self,
+        id: i64,
+        project_id: Option<i64>,
+        enabled: Option<bool>,
+    ) -> Result<()> {
         let conn = self.0.lock().unwrap();
         let changed = match enabled {
-            Some(enabled) => conn.execute("UPDATE knowledge_files SET enabled=?3 WHERE id=?1 AND project_id IS ?2",params![id,project_id,enabled])?,
-            None => conn.execute("DELETE FROM knowledge_files WHERE id=?1 AND project_id IS ?2",params![id,project_id])?,
+            Some(enabled) => conn.execute(
+                "UPDATE knowledge_files SET enabled=?3 WHERE id=?1 AND project_id IS ?2",
+                params![id, project_id, enabled],
+            )?,
+            None => conn.execute(
+                "DELETE FROM knowledge_files WHERE id=?1 AND project_id IS ?2",
+                params![id, project_id],
+            )?,
         };
-        if changed == 0 { return Err(rusqlite::Error::QueryReturnedNoRows); }
+        if changed == 0 {
+            return Err(rusqlite::Error::QueryReturnedNoRows);
+        }
         Ok(())
     }
 
-    pub fn file_context(&self, project_id: Option<i64>, query: &str, selected: &[i64]) -> Result<Vec<ContextSource>> {
+    pub fn file_context(
+        &self,
+        project_id: Option<i64>,
+        query: &str,
+        selected: &[i64],
+    ) -> Result<Vec<ContextSource>> {
         let conn = self.0.lock().unwrap();
         for id in selected {
-            conn.query_row("SELECT id FROM knowledge_files WHERE id=?1 AND project_id IS ?2",params![id,project_id], |_| Ok(()))?;
+            conn.query_row(
+                "SELECT id FROM knowledge_files WHERE id=?1 AND project_id IS ?2",
+                params![id, project_id],
+                |_| Ok(()),
+            )?;
         }
         let query = search_query(query);
         let sql = if !query.is_empty() && selected.is_empty() {
@@ -177,17 +296,44 @@ impl DbState {
             "SELECT f.id,f.filename,c.chunk_index,c.content FROM knowledge_chunks c JOIN knowledge_files f ON f.id=c.document_id WHERE f.project_id IS ?1 AND (f.enabled=1 OR ?2!='') ORDER BY c.chunk_index,f.id DESC LIMIT 2000"
         };
         let mut stmt = conn.prepare(sql)?;
-        let rows = stmt.query_map(params![project_id,if selected.is_empty() { query.as_str() } else { "selected" }], |r| Ok(ContextSource {
-            kind:"file".into(),document_id:Some(r.get(0)?),filename:r.get(1)?,citation:format!("arquivo:{}:{}",r.get::<_,i64>(0)?,r.get::<_,i64>(2)?+1),content:r.get(3)?
-        }))?;
+        let rows = stmt.query_map(
+            params![
+                project_id,
+                if selected.is_empty() {
+                    query.as_str()
+                } else {
+                    "selected"
+                }
+            ],
+            |r| {
+                Ok(ContextSource {
+                    kind: "file".into(),
+                    document_id: Some(r.get(0)?),
+                    filename: r.get(1)?,
+                    citation: format!(
+                        "arquivo:{}:{}",
+                        r.get::<_, i64>(0)?,
+                        r.get::<_, i64>(2)? + 1
+                    ),
+                    content: r.get(3)?,
+                })
+            },
+        )?;
         let candidates = rows.collect::<Result<Vec<_>>>()?;
-        drop(stmt);drop(conn);
-        if candidates.is_empty() && !query.is_empty() && selected.is_empty() { return self.file_context(project_id,"",selected); }
+        drop(stmt);
+        drop(conn);
+        if candidates.is_empty() && !query.is_empty() && selected.is_empty() {
+            return self.file_context(project_id, "", selected);
+        }
         let mut result = Vec::new();
         let mut remaining = 12000;
         for mut item in candidates {
-            if !selected.is_empty() && !selected.contains(&item.document_id.unwrap_or(0)) { continue; }
-            if remaining == 0 { break; }
+            if !selected.is_empty() && !selected.contains(&item.document_id.unwrap_or(0)) {
+                continue;
+            }
+            if remaining == 0 {
+                break;
+            }
             item.content = item.content.chars().take(remaining).collect();
             remaining -= item.content.chars().count();
             result.push(item);
@@ -195,15 +341,27 @@ impl DbState {
         Ok(result)
     }
 
-    pub fn save_memory_report(&self, id:i64, report:&serde_json::Value, replacement:Option<&str>)->Result<()> {
-        let conn=self.0.lock().unwrap();
-        conn.execute("UPDATE messages SET memory_report_json=?2,content=COALESCE(?3,content) WHERE id=?1",params![id,report.to_string(),replacement])?;
+    pub fn save_memory_report(
+        &self,
+        id: i64,
+        report: &serde_json::Value,
+        replacement: Option<&str>,
+    ) -> Result<()> {
+        let conn = self.0.lock().unwrap();
+        conn.execute(
+            "UPDATE messages SET memory_report_json=?2,content=COALESCE(?3,content) WHERE id=?1",
+            params![id, report.to_string(), replacement],
+        )?;
         Ok(())
     }
 
     pub fn save_sources(&self, message_id: i64, sources: &[ContextSource]) -> Result<()> {
-        let json = serde_json::to_string(sources).map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
-        self.0.lock().unwrap().execute("UPDATE messages SET sources_json=?2 WHERE id=?1",params![message_id,json])?;
+        let json = serde_json::to_string(sources)
+            .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+        self.0.lock().unwrap().execute(
+            "UPDATE messages SET sources_json=?2 WHERE id=?1",
+            params![message_id, json],
+        )?;
         Ok(())
     }
 }

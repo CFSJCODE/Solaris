@@ -10,10 +10,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import settings
 from app.core.database import init_db
-from app.modules.projects.router import router as projects_router
 from app.modules.chat.router import router as chat_router
+from app.modules.projects.router import router as projects_router
 from app.modules.rag.router import router as rag_router
 from app.modules.vision.router import router as vision_router
 
@@ -43,9 +42,9 @@ app.add_middleware(
 
 # ── Routers ──────────────────────────────────────────────
 app.include_router(projects_router, prefix="/api/projects", tags=["projects"])
-app.include_router(chat_router,     prefix="/api/chat",     tags=["chat"])
-app.include_router(rag_router,      prefix="/api/rag",      tags=["rag"])
-app.include_router(vision_router,   prefix="/api/vision",   tags=["vision"])
+app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
+app.include_router(rag_router, prefix="/api/rag", tags=["rag"])
+app.include_router(vision_router, prefix="/api/vision", tags=["vision"])
 
 
 @app.get("/api/health", tags=["system"])
