@@ -9,7 +9,9 @@ use tauri::{Manager, RunEvent};
 
 fn storage_dir(app: &tauri::AppHandle) -> PathBuf {
     #[cfg(debug_assertions)]
-    if let Some(path)=std::env::var_os("SOLARIS_TEST_DATA_DIR") { return PathBuf::from(path); }
+    if let Some(path) = std::env::var_os("SOLARIS_TEST_DATA_DIR") {
+        return PathBuf::from(path);
+    }
     app.path()
         .app_data_dir()
         .unwrap_or_else(|_| PathBuf::from("storage"))
@@ -27,7 +29,10 @@ pub fn run() {
 
             // Open SQLite DB
             let storage = storage_dir(&handle);
-            app.manage(project_memory::MemoryStore { root: storage.join("memory"), lock: std::sync::Mutex::new(()) });
+            app.manage(project_memory::MemoryStore {
+                root: storage.join("memory"),
+                lock: std::sync::Mutex::new(()),
+            });
             let conn = db::open(&storage).expect("failed to open database");
             app.manage(db::DbState(std::sync::Mutex::new(conn)));
 
@@ -35,13 +40,15 @@ pub fn run() {
             std::env::set_var("SOLARIS_STORAGE", storage.to_str().unwrap_or(""));
 
             // Spawn Python engine sidecar
-            let engine = engine::EngineState::spawn(&handle)
-                .expect("failed to spawn solaris-engine");
+            let engine =
+                engine::EngineState::spawn(&handle).expect("failed to spawn solaris-engine");
             app.manage(engine);
 
             #[cfg(debug_assertions)]
             if let Some(window) = app.get_webview_window("main") {
-                if std::env::var_os("SOLARIS_TEST_DATA_DIR").is_none() { window.open_devtools(); }
+                if std::env::var_os("SOLARIS_TEST_DATA_DIR").is_none() {
+                    window.open_devtools();
+                }
             }
 
             Ok(())

@@ -80,10 +80,12 @@ impl EngineState {
                             std::mem::take(&mut guard.pending)
                         };
                         for (id, callback) in callbacks {
-                            callback(serde_json::json!({"id": id, "type": "error", "message": "O motor foi encerrado."}));
+                            callback(
+                                serde_json::json!({"id": id, "type": "error", "message": "O motor foi encerrado."}),
+                            );
                         }
                         break;
-                    },
+                    }
                     _ => {}
                 }
             }
