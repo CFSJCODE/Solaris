@@ -29,6 +29,7 @@ _adapted_lock = threading.Lock()
 _supplemental_session = None
 _supplemental_path = None
 _supplemental_lock = threading.Lock()
+_active_labels: list[str] | None = None
 
 # Função para obter o caminho do modelo YOLOv8, verificando diferentes diretórios e selecionando o modelo mais adequado
 LABELS_EN = [
@@ -208,9 +209,21 @@ def model_path() -> Path:
         if not directory.is_dir():
             continue
         for path in directory.glob("*.onnx"):
-            match = re.fullmatch(
-                r"(yolo26|yolo11|yolov8)([nsmlx])", path.stem.lower().replace(" ", "")
-            )
+            stem = path.stem.lower().replace(" ", "")
+            # OIV7 family: yolov8n-oiv7, yolov8s-oiv7, etc. — priority 30 (above yolo26=26)
+            oiv7_match = re.fullmatch(r"(yolov8)([nsmlx])-oiv7", stem)
+            if oiv7_match:
+                _, scale = oiv7_match.groups()
+                candidates.append(
+                    (
+                        {"n": 0, "s": 1, "m": 2, "l": 3, "x": 4}[scale],
+                        30,
+                        int(directory == local),
+                        path,
+                    )
+                )
+                continue
+            match = re.fullmatch(r"(yolo26|yolo11|yolov8)([nsmlx])", stem)
             if match:
                 family, scale = match.groups()
                 candidates.append(
@@ -240,7 +253,7 @@ def status() -> dict[str, bool | str | None]:
 
 # Função para carregar o modelo YOLOv8, verificando compatibilidade e inicializando a sessão ONNX
 def load() -> None:
-    global _session, _loaded_path, _loading, _load_error
+    global _session, _loaded_path, _loading, _load_error, _active_labels
     with _load_lock:
         if _session is not None:
             return
@@ -268,12 +281,21 @@ def load() -> None:
             )
             if spec.type != "tensor(float)" or len(spec.shape) != 4 or not 32 <= size <= 640:
                 raise ValueError("Modelo ONNX incompatível com o detector CPU.")
+            # Load label sidecar (e.g. yolov8n-oiv7.labels.json) if present.
+            sidecar = path.with_suffix("").with_suffix(".labels.json")
+            labels_for_model: list[str] | None = None
+            if sidecar.is_file():
+                try:
+                    labels_for_model = json.loads(sidecar.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    pass
             sample = session.run(None, {spec.name: np.zeros((1, 3, size, size), dtype=np.float32)})[
                 0
             ]
-            postprocess(sample, size, size, 1, 0, 0)
+            postprocess(sample, size, size, 1, 0, 0, labels=labels_for_model or LABELS)
             _loaded_path = path
             _session = session
+            _active_labels = labels_for_model
         except Exception as exc:
             _load_error = str(exc)
             raise
