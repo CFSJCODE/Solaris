@@ -356,8 +356,13 @@ def postprocess(output, width: int, height: int, scale: float, pad_x: int, pad_y
                     )
                 )
         return boxes
-    if predictions.ndim != 3 or predictions.shape[0] != 1 or predictions.shape[1] != 84:
-        raise ValueError("Modelo incompatível: esperado detector COCO [1,84,N] ou [1,N,6].")
+    # Saída bruta YOLOv8: [1, 4 + classes, N] (COCO = 84; Open Images V7 = 605).
+    if (
+        predictions.ndim != 3
+        or predictions.shape[0] != 1
+        or predictions.shape[1] != 4 + len(labels)
+    ):
+        raise ValueError("Modelo incompatível: esperado detector [1,4+classes,N] ou [1,N,6].")
     rows = predictions[0].T
     rows = rows[np.isfinite(rows).all(axis=1)]
     class_ids = rows[:, 4:].argmax(axis=1)
@@ -385,7 +390,7 @@ def postprocess(output, width: int, height: int, scale: float, pad_x: int, pad_y
     return [
         dict(
             class_id=kept_classes[i],
-            label=LABELS[kept_classes[i]],
+            label=labels[kept_classes[i]],
             confidence=kept_scores[i],
             x=boxes[i][0],
             y=boxes[i][1],
@@ -562,6 +567,232 @@ def merge_supplemental_detections(base_detections, supplemental_detections, labe
     return retained + class_only_detections(supplemental_detections, class_ids)
 
 
+# Detector suplementar Open Images V7 (601 classes): roda junto com o principal e só
+# acrescenta objetos que as 80 classes COCO não cobrem (porta, janela, armário...).
+OIV7_CLASS_OFFSET = 1000  # IDs fora da faixa COCO: environment/learning tratam por rótulo.
+_OIV7_COCO_EQUIVALENTS = {
+    # Pessoas e partes do corpo já cobertas por "person" no COCO.
+    "person",
+    "man",
+    "woman",
+    "boy",
+    "girl",
+    "human face",
+    "human head",
+    "human body",
+    "human hand",
+    "human arm",
+    "human leg",
+    "human foot",
+    "human eye",
+    "human ear",
+    "human nose",
+    "human mouth",
+    "human hair",
+    "human beard",
+    "clothing",
+    "footwear",
+    # Categorias genéricas ou sinônimos de classes COCO.
+    "animal",
+    "mammal",
+    "land vehicle",
+    "vehicle",
+    "auto part",
+    "furniture",
+    "food",
+    "fast food",
+    "drink",
+    "tableware",
+    "kitchenware",
+    "office supplies",
+    "plant",
+    "houseplant",
+    "flower",
+    "tree",
+    "building",
+    "house",
+    "home appliance",
+    "mobile phone",
+    "television",
+    "computer keyboard",
+    "computer mouse",
+    "laptop",
+    "table",
+    "kitchen & dining room table",
+    "chair",
+    "couch",
+    "sofa bed",
+    "bed",
+    "toilet",
+    "sink",
+    "refrigerator",
+    "microwave oven",
+    "oven",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "toothbrush",
+    "hair dryer",
+    "bottle",
+    "wine glass",
+    "mug",
+    "coffee cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "car",
+    "bus",
+    "truck",
+    "train",
+    "boat",
+    "airplane",
+    "aircraft",
+    "bicycle",
+    "motorcycle",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cattle",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "ski",
+    "snowboard",
+    "ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "doughnut",
+    "cake",
+    "remote control",
+}
+_oiv7_session = None
+_oiv7_path = None
+_oiv7_labels: list[str] | None = None
+_oiv7_english: list[str] | None = None
+_oiv7_error: str | None = None
+_oiv7_lock = threading.Lock()
+
+
+def oiv7_model_path() -> Path | None:
+    local = Path(os.environ.get("SOLARIS_STORAGE", "storage")) / "models"
+    bundled = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3])) / "models"
+    found = [
+        path
+        for directory in (local, bundled)
+        if directory.is_dir()
+        for path in sorted(directory.glob("yolov8*-oiv7.onnx"))
+    ]
+    return found[0] if found else None
+
+
+def oiv7_session():
+    """Carrega o OIV7 sob demanda; falha vira aviso, nunca derruba o detector principal."""
+    global _oiv7_session, _oiv7_path, _oiv7_labels, _oiv7_english, _oiv7_error
+    path = oiv7_model_path()
+    if path is None:
+        return None
+    with _oiv7_lock:
+        if _oiv7_session is not None and _oiv7_path == path:
+            return _oiv7_session, _oiv7_labels, _oiv7_english
+        if _oiv7_error is not None and _oiv7_path == path:
+            return None
+        _oiv7_path = path
+        try:
+            import ast
+
+            ort = importlib.import_module("onnxruntime")
+            options = ort.SessionOptions()
+            options.intra_op_num_threads = 2
+            options.inter_op_num_threads = 1
+            session = ort.InferenceSession(
+                str(path), sess_options=options, providers=["CPUExecutionProvider"]
+            )
+            names = ast.literal_eval(session.get_modelmeta().custom_metadata_map["names"])
+            english = [str(names[i]) for i in range(len(names))]
+            sidecar = path.with_suffix("").with_suffix(".labels.json")
+            labels = (
+                json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.is_file() else english
+            )
+            if len(labels) != len(english) or session.get_outputs()[0].shape[1] != 4 + len(labels):
+                raise ValueError("Rótulos do OIV7 incompatíveis com o modelo.")
+            _oiv7_session, _oiv7_labels, _oiv7_english, _oiv7_error = (
+                session,
+                labels,
+                english,
+                None,
+            )
+            return session, labels, english
+        except Exception as exc:
+            _oiv7_session, _oiv7_error = None, f"Detector OIV7 indisponível: {exc}"
+            return None
+
+
+def merge_oiv7_detections(primary, oiv7_detections, english_names, primary_labels=None):
+    """Acrescenta só classes fora do COCO, com IDs deslocados e origem identificada."""
+    covered = set(primary_labels or LABELS) | {detection["label"] for detection in primary}
+    extra = []
+    for detection in oiv7_detections:
+        english = english_names[detection["class_id"]].lower()
+        if english in _OIV7_COCO_EQUIVALENTS or detection["label"] in covered:
+            continue
+        extra.append(
+            {
+                **detection,
+                "class_id": OIV7_CLASS_OFFSET + detection["class_id"],
+                "source": "oiv7",
+            }
+        )
+    return primary + extra
+
+
+def run_oiv7(image, width, height, np, cv2):
+    loaded = oiv7_session()
+    if loaded is None:
+        return None, None
+    session, labels, english = loaded
+    spec = session.get_inputs()[0]
+    size = spec.shape[2] if isinstance(spec.shape[2], int) else 640
+    scale = min(size / width, size / height)
+    new_w, new_h = round(width * scale), round(height * scale)
+    pad_x, pad_y = (size - new_w) // 2, (size - new_h) // 2
+    padded = np.full((size, size, 3), 114, dtype=np.uint8)
+    padded[pad_y : pad_y + new_h, pad_x : pad_x + new_w] = cv2.resize(image, (new_w, new_h))
+    tensor = (
+        np.ascontiguousarray(padded[:, :, ::-1].transpose(2, 0, 1)[None], dtype=np.float32) / 255.0
+    )
+    output = session.run(None, {spec.name: tensor})[0]
+    return postprocess(output, width, height, scale, pad_x, pad_y, labels), english
+
+
 def detect(content_b64: str, project_id=None, live=False) -> dict:
     global _session
     import cv2
@@ -648,6 +879,16 @@ def detect(content_b64: str, project_id=None, live=False) -> dict:
         )
     elif supplement_warning:
         warning = "; ".join(value for value in (warning, supplement_warning) if value)
+    try:
+        oiv7_detections, oiv7_english = run_oiv7(image, width, height, np, cv2)
+    except Exception as exc:
+        oiv7_detections, oiv7_english = None, None
+        warning = "; ".join(value for value in (warning, f"Detector OIV7 falhou: {exc}") if value)
+    if oiv7_detections is not None and oiv7_english is not None:
+        detections = merge_oiv7_detections(detections, oiv7_detections, oiv7_english, labels)
+        model_name = f"{model_name} + OIV7"
+    elif _oiv7_error:
+        warning = "; ".join(value for value in (warning, _oiv7_error) if value)
     return dict(
         detections=detections,
         width=width,

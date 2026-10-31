@@ -1,3 +1,5 @@
+# ultralytics existe só no runtime de aprendizado separado.
+# pyright: reportMissingImports=false
 """Exporta yolov8n-oiv7 (Open Images V7, 601 classes) para ONNX FP32.
 
 Execute no ambiente de aprendizado do SOLARIS (onde ultralytics está disponível):
