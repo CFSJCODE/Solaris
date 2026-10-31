@@ -1,0 +1,14 @@
+# Ruff — formatter + linter para o python-engine do SOLARIS
+# Equivalente a Black + isort + Flake8 em uma única ferramenta
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]  # comprimento de linha tratado pelo formatter
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+line-length = 100
+target-version = "py311"
