@@ -1,0 +1,9 @@
+# Installed in a separate CPU-only Python 3.10 environment by setup_learning.py.
+ultralytics==8.4.194
+transformers==4.57.6
+psutil==7.2.2
+onnx==1.20.1
+onnxruntime==1.23.2
+scipy==1.15.3
+lap==0.5.12
+hf_xet==1.8.0
