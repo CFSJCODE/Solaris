@@ -459,7 +459,7 @@ def status(project_id, enabled=None):
         "requests": requests,
         "concurrent": True,
         "learning_cpu": _reserved_cpu,
-        "training_model": "yolo26x + yolo26s",
+        "training_model": "yolo26s",
         "collection_limit": 3000,
         "message": setting["message"] if runtime() else "Motor de aprendizado ainda não instalado.",
     }
@@ -499,7 +499,7 @@ def request_training(project_id, sample_id=None):
                 )
             ]
         source_hash = hashlib.sha256(json.dumps(source, sort_keys=True).encode()).hexdigest()
-        for model in ("yolo26s", "yolo26x"):
+        for model in ("yolo26s",):
             if sample_id is None:
                 existing = conn.execute(
                     "SELECT id FROM training_requests WHERE scope=? AND model=? AND sample_id IS NULL AND state IN ('queued','preparing','verifying','training','paused') ORDER BY created LIMIT 1",
@@ -535,13 +535,13 @@ def request_training(project_id, sample_id=None):
         event(
             conn,
             key,
-            "Treinamento de YOLO26s e YOLO26x solicitado. Métricas serão medidas, não alteradas manualmente.",
+            "Treinamento de YOLO26s solicitado. Métricas serão medidas, não alteradas manualmente.",
         )
     start_worker()
     return {
         "request_ids": identifiers,
         "runtime_ready": runtime() is not None,
-        "message": "Solicitação registrada para os dois modelos. A ativação depende de avaliação e evidência suficiente.",
+        "message": "Solicitação registrada. A ativação depende de avaliação e evidência suficiente.",
     }
 
 
