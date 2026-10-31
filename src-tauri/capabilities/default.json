@@ -3,10 +3,5 @@
   "identifier": "default",
   "description": "Default Solaris capabilities",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "shell:default",
-    "dialog:default",
-    "fs:default"
-  ]
+  "permissions": ["core:default", "shell:default", "dialog:default", "fs:default"]
 }

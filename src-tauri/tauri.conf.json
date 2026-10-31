@@ -41,8 +41,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": [
-      "binaries/solaris-engine"
-    ]
+    "externalBin": ["binaries/solaris-engine"]
   }
 }
