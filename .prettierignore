@@ -1,0 +1,9 @@
+dist/
+node_modules/
+src-tauri/
+target/
+__pycache__/
+.venv/
+*.onnx
+*.json.lock
+*.py
