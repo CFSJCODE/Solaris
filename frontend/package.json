@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "test:annotations": "node --test tests/annotationGeometry.test.mjs",
     "test:vision-ui": "playwright test",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.56.2",
@@ -31,6 +33,7 @@
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
+    "prettier": "3.9.10",
     "typescript": "^5.5.3",
     "vite": "^5.4.2"
   }
