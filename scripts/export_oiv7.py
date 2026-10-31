@@ -43,7 +43,7 @@ def main() -> None:
         src.rename(onnx_path)
         print(f"ONNX salvo em: {onnx_path}")
 
-    # Extrai rótulos em português (usa o mapeamento embutido do SOLARIS quando disponível)
+    # Extrai rótulos em português usando TRADUCOES do SOLARIS
     if not labels_path.exists():
         print("Gerando sidecar de rótulos…")
         try:
@@ -55,25 +55,13 @@ def main() -> None:
             print(f"Não foi possível extrair nomes do modelo: {exc}", file=sys.stderr)
             sys.exit(1)
 
-        # Tenta traduzir usando o mapeamento do SOLARIS (object_vocabulary.py)
+        # Traduz usando o dicionário completo do SOLARIS (oiv7_labels_pt.py)
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python-engine"))
         try:
-            sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "python-engine"))
-            from app.vision.object_vocabulary import canonical_object_name  # noqa: PLC0415
-
-            # Construção de tabela inglês→português a partir do vocabulário
-            _pt_map: dict[str, str] = {}
-            try:
-                from app.vision.object_vocabulary import OBJECTS  # noqa: PLC0415
-
-                for canonical, label_pt, aliases in OBJECTS:
-                    _pt_map[canonical.lower()] = label_pt
-                    for alias in aliases:
-                        _pt_map[alias.lower()] = label_pt
-            except Exception:
-                pass
+            from app.vision.oiv7_labels_pt import TRADUCOES  # noqa: PLC0415
 
             def _translate(name: str) -> str:
-                return _pt_map.get(name.lower(), name)
+                return TRADUCOES.get(name.lower(), name)
 
         except Exception:
 
@@ -95,7 +83,7 @@ def main() -> None:
         print(f"Sidecar de rótulos já existe: {labels_path}")
 
     print("\nConcluído. Reinicie o SOLARIS para carregar o novo detector.")
-    print(f"O modelo OIV7 ({MODEL_NAME}) será preferido ao YOLO26 atual.")
+    print(f"O modelo OIV7 ({MODEL_NAME}) atuará como detector suplementar (YOLO26 é o primário).")
 
 
 if __name__ == "__main__":

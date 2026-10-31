@@ -210,14 +210,15 @@ def model_path() -> Path:
             continue
         for path in directory.glob("*.onnx"):
             stem = path.stem.lower().replace(" ", "")
-            # OIV7 family: yolov8n-oiv7, yolov8s-oiv7, etc. — priority 30 (above yolo26=26)
+            # OIV7 family: yolov8n-oiv7, yolov8s-oiv7, etc. — priority 5 (below yolo26=26)
+            # OIV7 is a supplemental detector; YOLO26x (priority 26) remains the primary.
             oiv7_match = re.fullmatch(r"(yolov8)([nsmlx])-oiv7", stem)
             if oiv7_match:
                 _, scale = oiv7_match.groups()
                 candidates.append(
                     (
                         {"n": 0, "s": 1, "m": 2, "l": 3, "x": 4}[scale],
-                        30,
+                        5,
                         int(directory == local),
                         path,
                     )
