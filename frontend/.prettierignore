@@ -1,0 +1,7 @@
+# Gerados ou de terceiros: não formatar
+dist/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
