@@ -10,12 +10,14 @@ from typing import Any
 
 _client: Any | None = None
 
+
 # Função para obter o diretório de armazenamento, verificando a variável de ambiente SOLARIS_STORAGE
 def _storage_dir() -> Path:
     base = os.getenv("SOLARIS_STORAGE", "")
     if base:
         return Path(base).resolve()
     return Path(__file__).parent.parent.parent.parent / "storage"
+
 
 # Função para obter o cliente ChromaDB, criando-o se ainda não existir, e configurando o diretório de armazenamento
 def _get_client() -> Any:
@@ -31,9 +33,11 @@ def _get_client() -> Any:
         )
     return _client
 
+
 # Função para gerar o nome da coleção com base no ID do projeto, retornando "default" se o ID for None
 def _collection_name(project_id: int | None) -> str:
     return f"project_{project_id}" if project_id is not None else "default"
+
 
 # Função para adicionar chunks de texto à coleção, incluindo embeddings, textos e metadados
 def add_chunks(
@@ -48,6 +52,7 @@ def add_chunks(
         metadata={"hnsw:space": "cosine"},
     )
     col.add(ids=chunk_ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
+
 
 # Função para pesquisar na coleção com base em um embedding de consulta, retornando os resultados com conteúdo, metadados e pontuação
 def search(
@@ -70,12 +75,15 @@ def search(
 
     hits: list[dict[str, Any]] = []
     for i, doc in enumerate(results["documents"][0]):
-        hits.append({
-            "content": doc,
-            "metadata": results["metadatas"][0][i],
-            "score": 1 - results["distances"][0][i],
-        })
+        hits.append(
+            {
+                "content": doc,
+                "metadata": results["metadatas"][0][i],
+                "score": 1 - results["distances"][0][i],
+            }
+        )
     return hits
+
 
 # Função para deletar chunks da coleção com base em seus IDs, ignorando erros se a coleção não existir
 def delete_chunks(project_id: int | None, chunk_ids: list[str]) -> None:

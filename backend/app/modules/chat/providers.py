@@ -1,7 +1,7 @@
 """LLM provider adapters — Anthropic and OpenRouter streaming."""
 
 import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import httpx
 from anthropic import AsyncAnthropic
@@ -82,31 +82,33 @@ async def stream_openrouter(
     input_tokens = 0
     output_tokens = 0
 
-    async with httpx.AsyncClient(timeout=60) as client:
-        async with client.stream(
+    async with (
+        httpx.AsyncClient(timeout=60) as client,
+        client.stream(
             "POST",
             "https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
             json=payload,
-        ) as resp:
-            resp.raise_for_status()
-            async for line in resp.aiter_lines():
-                if not line.startswith("data: "):
-                    continue
-                data = line[6:]
-                if data == "[DONE]":
-                    break
-                try:
-                    chunk = json.loads(data)
-                    delta = chunk["choices"][0]["delta"].get("content", "")
-                    if delta:
-                        yield {"type": "delta", "text": delta}
-                    usage = chunk.get("usage")
-                    if usage:
-                        input_tokens = usage.get("prompt_tokens", 0)
-                        output_tokens = usage.get("completion_tokens", 0)
-                except Exception:
-                    pass
+        ) as resp,
+    ):
+        resp.raise_for_status()
+        async for line in resp.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            data = line[6:]
+            if data == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data)
+                delta = chunk["choices"][0]["delta"].get("content", "")
+                if delta:
+                    yield {"type": "delta", "text": delta}
+                usage = chunk.get("usage")
+                if usage:
+                    input_tokens = usage.get("prompt_tokens", 0)
+                    output_tokens = usage.get("completion_tokens", 0)
+            except Exception:
+                pass
 
     pricing = OPENROUTER_PRICING.get(model, {"input": 0.0, "output": 0.0})
     cost = input_tokens * pricing["input"] + output_tokens * pricing["output"]

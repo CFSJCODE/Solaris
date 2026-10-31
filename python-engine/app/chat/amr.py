@@ -1,4 +1,5 @@
 """Adaptive Model Router — keyword heuristic to pick provider + model."""
+
 from __future__ import annotations
 
 import os
@@ -13,16 +14,34 @@ class ModelSelection:
 
 
 _COMPLEX_KEYWORDS = {
-    "código", "code", "programa", "debug", "erro", "analisa", "analyze",
-    "explica", "explain", "compara", "compare", "resumo", "summary",
-    "traduza", "translate", "refatora", "refactor", "arquitetura",
-    "architecture", "implemente", "implement",
+    "código",
+    "code",
+    "programa",
+    "debug",
+    "erro",
+    "analisa",
+    "analyze",
+    "explica",
+    "explain",
+    "compara",
+    "compare",
+    "resumo",
+    "summary",
+    "traduza",
+    "translate",
+    "refatora",
+    "refactor",
+    "arquitetura",
+    "architecture",
+    "implemente",
+    "implement",
 }
+
 
 # Rota heurística para selecionar o modelo com base na mensagem do usuário
 def route(user_message: str) -> ModelSelection:
     has_ant = bool(os.getenv("ANTHROPIC_API_KEY"))
-    has_or  = bool(os.getenv("OPENROUTER_API_KEY"))
+    has_or = bool(os.getenv("OPENROUTER_API_KEY"))
 
     # Se nenhum provedor estiver configurado, retorna uma seleção vazia
     if not has_ant and not has_or:

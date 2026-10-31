@@ -1,4 +1,5 @@
 """Geração de embeddings com multilingual-e5-small (ONNX, CPU-only). Lazy-loaded."""
+
 from __future__ import annotations
 
 # Importa as bibliotecas necessárias
@@ -12,18 +13,23 @@ import numpy as np  # type: ignore[import-not-found]
 _session = None
 _tokenizer = None
 
+
 # Função para obter o caminho do modelo de embeddings, verificando se ele existe em diferentes locais
 def _model_path() -> Path:
     # Packaged: next to the .exe; dev: storage/models/
     exe_dir = Path(os.getenv("SOLARIS_STORAGE", "")).resolve()
     candidates = [
         exe_dir / "models" / "multilingual-e5-small.onnx",
-        Path(__file__).parent.parent.parent.parent / "storage" / "models" / "multilingual-e5-small.onnx",
+        Path(__file__).parent.parent.parent.parent
+        / "storage"
+        / "models"
+        / "multilingual-e5-small.onnx",
     ]
     for p in candidates:
         if p.exists():
             return p
     return candidates[-1]
+
 
 # Função para carregar o modelo de embeddings e o tokenizador, se ainda não estiverem carregados
 def _load():
@@ -55,6 +61,7 @@ def _load():
     _tokenizer.enable_truncation(max_length=512)
     _tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=512)
 
+
 # Função para gerar embeddings para uma lista de textos, normalizando os vetores resultantes
 def embed(texts: list[str]) -> list[list[float]]:
     _load()
@@ -69,11 +76,14 @@ def embed(texts: list[str]) -> list[list[float]]:
     token_type_ids = np.zeros_like(input_ids)
 
     # Executa a sessão ONNX Runtime para obter os embeddings, aplicando máscara de atenção e normalizando os vetores resultantes
-    outputs = _session.run(None, {
-        "input_ids": input_ids,
-        "attention_mask": attention_mask,
-        "token_type_ids": token_type_ids,
-    })
+    outputs = _session.run(
+        None,
+        {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "token_type_ids": token_type_ids,
+        },
+    )
 
     # Aplica a máscara de atenção aos embeddings, soma os vetores e normaliza para obter os embeddings finais
     hidden = outputs[0]
@@ -83,6 +93,7 @@ def embed(texts: list[str]) -> list[list[float]]:
     pooled = summed / counts
     norms = np.linalg.norm(pooled, axis=1, keepdims=True).clip(min=1e-9)
     return (pooled / norms).tolist()
+
 
 # Função para gerar embeddings para uma única consulta, normalizando o vetor resultante
 def embed_query(query: str) -> list[float]:
@@ -95,11 +106,14 @@ def embed_query(query: str) -> list[float]:
     token_type_ids = np.zeros_like(input_ids)
 
     # Executa a sessão ONNX Runtime para obter os embeddings da consulta, aplicando máscara de atenção e normalizando o vetor resultante
-    outputs = _session.run(None, {
-        "input_ids": input_ids,
-        "attention_mask": attention_mask,
-        "token_type_ids": token_type_ids,
-    })
+    outputs = _session.run(
+        None,
+        {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "token_type_ids": token_type_ids,
+        },
+    )
 
     # Aplica a máscara de atenção aos embeddings, soma os vetores e normaliza para obter o embedding final da consulta
     hidden = outputs[0]

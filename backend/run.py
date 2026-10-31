@@ -1,8 +1,8 @@
 """Entrypoint para PyInstaller — inicia o uvicorn programaticamente."""
 
 # Importa as bibliotecas necessárias
-import sys
 import os
+import sys
 
 # Quando rodando como .exe empacotado pelo PyInstaller,
 # sys._MEIPASS aponta para a pasta temporária de extração.

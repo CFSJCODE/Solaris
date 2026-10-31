@@ -1,26 +1,29 @@
 """LLM provider adapters — Anthropic and OpenRouter, async generators."""
+
 # Importa as bibliotecas necessárias
 from __future__ import annotations
 
+import asyncio
 import json
 import os
-import asyncio
+from collections.abc import AsyncGenerator
 from importlib import import_module
-from typing import Any, AsyncGenerator
+from typing import Any
 from urllib.request import Request, urlopen
 
 # Define os preços por token para os modelos Anthropic e OpenRouter
 ANTHROPIC_PRICING: dict[str, dict[str, float]] = {
-    "claude-haiku-5-5":  {"input": 0.10e-6, "output": 0.50e-6},
-    "claude-sonnet-5-5": {"input": 2.0e-6,  "output": 10.0e-6},
+    "claude-haiku-5-5": {"input": 0.10e-6, "output": 0.50e-6},
+    "claude-sonnet-5-5": {"input": 2.0e-6, "output": 10.0e-6},
 }
 
 # Define os preços por token para os modelos OpenRouter
 OPENROUTER_PRICING: dict[str, dict[str, float]] = {
-    "google/gemma-4-31b-it:free":                  {"input": 0.0, "output": 0.0},
-    "google/gemma-4-26b-a4b-it:free":              {"input": 0.0, "output": 0.0},
-    "nvidia/nemotron-3.5-lightning:free":           {"input": 0.0, "output": 0.0},
+    "google/gemma-4-31b-it:free": {"input": 0.0, "output": 0.0},
+    "google/gemma-4-26b-a4b-it:free": {"input": 0.0, "output": 0.0},
+    "nvidia/nemotron-3.5-lightning:free": {"input": 0.0, "output": 0.0},
 }
+
 
 # Função assíncrona para transmitir mensagens para o modelo Anthropic
 async def stream_anthropic(
@@ -63,6 +66,7 @@ async def stream_anthropic(
         },
     }
 
+
 # Função assíncrona para transmitir mensagens para o modelo OpenRouter
 async def stream_openrouter(
     messages: list[dict[str, Any]],
@@ -72,7 +76,9 @@ async def stream_openrouter(
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     if not api_key:
         raise RuntimeError("OPENROUTER_API_KEY não configurada.")
-    msgs: list[dict[str, Any]] = ([{"role": "system", "content": system}] + messages) if system else messages
+    msgs: list[dict[str, Any]] = (
+        ([{"role": "system", "content": system}] + messages) if system else messages
+    )
     headers: dict[str, str] = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",

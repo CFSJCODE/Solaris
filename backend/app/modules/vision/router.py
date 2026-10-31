@@ -1,4 +1,5 @@
 """vision router — stub para Sprint 0."""
+
 from fastapi import APIRouter
 
 router = APIRouter()
