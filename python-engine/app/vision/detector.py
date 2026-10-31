@@ -313,6 +313,12 @@ def start_loading() -> None:
             load()
         except Exception:
             pass  # status() exposes the load error; no silent smaller-model fallback.
+        # Inicia carregamento do CLIP em paralelo (background daemon)
+        try:
+            from app.vision.clip_embedder import start_loading_clip
+            start_loading_clip()
+        except Exception:
+            pass
 
     if _load_thread is None:
         _load_thread = threading.Thread(target=background, daemon=True, name="solaris-vision-load")
@@ -648,6 +654,24 @@ def detect(content_b64: str, project_id=None, live=False) -> dict:
         )
     elif supplement_warning:
         warning = "; ".join(value for value in (warning, supplement_warning) if value)
+    # --- CLIP embedding + clustering (assíncrono, best-effort) ---
+    try:
+        from app.vision.clip_embedder import embed_crops
+        from app.vision.visual_memory import get_memory
+        embeddings = embed_crops(image, detections)
+        if embeddings:
+            mem = get_memory()
+            frame_hash = hashlib.sha1(data[:4096]).hexdigest()
+            for det, emb_vec in embeddings:
+                stored_id = mem.store_embedding(det, emb_vec, frame_hash)
+                # Associa cluster mais próximo à detecção (se existir)
+                nearest = mem.nearest_cluster(emb_vec)
+                if nearest and nearest["similarity"] >= 0.65:
+                    det["cluster_id"] = nearest["cluster_id"]
+                    det["cluster_label"] = nearest["user_label"]
+    except Exception:
+        pass  # CLIP opcional — não bloqueia a resposta de detecção
+
     return dict(
         detections=detections,
         width=width,
