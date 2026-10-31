@@ -1,205 +1,211 @@
 <div align="center">
 
-# SOLARIS
+# ☀️ SOLARIS
 
-**Plataforma de IA pessoal para Windows — chat multi-LLM, RAG local, visão em tempo real e aprendizado adaptativo, tudo rodando na sua máquina.**
+### Sua plataforma pessoal de Inteligência Artificial — projetos, chat multi-LLM, memória viva e visão computacional, tudo em um app desktop
+
+**Organize seu trabalho em projetos, converse com os melhores modelos de IA usando os seus próprios arquivos como contexto e ensine o computador a reconhecer o seu ambiente — com privacidade, rodando no seu PC.**
+
+<!-- Versão e plataforma -->
 
 [![Versão](https://img.shields.io/badge/versão-0.5.4-blue?style=for-the-badge)](https://github.com/CFSJCODE/Solaris/releases)
-[![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4?style=for-the-badge&logo=windows)](https://github.com/CFSJCODE/Solaris)
-[![Licença](https://img.shields.io/badge/licença-privado-red?style=for-the-badge)](LICENSE)
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![Desktop nativo](https://img.shields.io/badge/App-Desktop%20nativo-EA6113?style=for-the-badge)
+![Sem servidor](<https://img.shields.io/badge/Arquitetura-Sem%20servidor%20(IPC%20%2B%20JSON%20Lines)-F88F22?style=for-the-badge>)
+![Visão local](https://img.shields.io/badge/Vis%C3%A3o-100%25%20local%20em%20CPU-FBB931?style=for-the-badge)
 
----
+<!-- Núcleo do aplicativo -->
 
-### Stack
+![Tauri](https://img.shields.io/badge/Tauri_2-24C8DB?style=flat-square&logo=tauri&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)
+![React](https://img.shields.io/badge/React_18-61DAFB?style=flat-square&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite_%2B_FTS5-003B57?style=flat-square&logo=sqlite&logoColor=white)
 
-[![Tauri](https://img.shields.io/badge/Tauri_2-24C8D8?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
-[![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
-[![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org)
-[![ONNX](https://img.shields.io/badge/ONNX_Runtime-005CED?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai)
-[![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)](https://opencv.org)
+<!-- IA e visão computacional -->
 
-### Modelos de IA
+![Anthropic](https://img.shields.io/badge/Anthropic_Claude-D97757?style=flat-square&logo=anthropic&logoColor=white)
+![OpenRouter](https://img.shields.io/badge/OpenRouter-6566F1?style=flat-square&logo=openrouter&logoColor=white)
+![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-005CED?style=flat-square&logo=onnx&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
+![Ultralytics](<https://img.shields.io/badge/YOLO26_(Ultralytics)-111F68?style=flat-square&logo=ultralytics&logoColor=white>)
+![PyTorch](https://img.shields.io/badge/PyTorch_CPU-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)
+![Hugging Face](<https://img.shields.io/badge/OWLv2_(Transformers)-FFD21E?style=flat-square&logo=huggingface&logoColor=black>)
 
-[![Anthropic](https://img.shields.io/badge/Anthropic_Claude-D4A27F?style=flat-square)](https://anthropic.com)
-[![OpenRouter](https://img.shields.io/badge/OpenRouter-6B46C1?style=flat-square)](https://openrouter.ai)
-[![YOLOv8](https://img.shields.io/badge/YOLOv8n_ONNX-00FFFF?style=flat-square)](https://docs.ultralytics.com)
+<!-- Qualidade de código -->
 
-### Qualidade
-
-[![Ruff](https://img.shields.io/badge/Ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff)
-[![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=flat-square&logo=prettier&logoColor=black)](https://prettier.io)
-[![Pyright](https://img.shields.io/badge/Pyright-0_erros-brightgreen?style=flat-square)](https://github.com/microsoft/pyright)
-[![Testes](https://img.shields.io/badge/testes-49_passando-brightgreen?style=flat-square)](python-engine/tests)
+![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=flat-square&logo=prettier&logoColor=black)
+![Ruff](https://img.shields.io/badge/Ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)
+![Pyright](https://img.shields.io/badge/Pyright-0_erros-2E7D32?style=flat-square&logo=python&logoColor=white)
+![rustfmt](https://img.shields.io/badge/rustfmt-000000?style=flat-square&logo=rust&logoColor=white)
 
 </div>
 
 ---
 
-## O que é o SOLARIS
+## ✨ Por que o SOLARIS
 
-SOLARIS é uma plataforma de inteligência artificial 100 % local para Windows. Ela reúne quatro capacidades em um único aplicativo instalável (`.msi`), sem nuvem obrigatória, sem Docker e sem servidor externo:
+A maioria das ferramentas de IA esquece tudo a cada conversa, mistura assuntos e exige enviar seus dados para a nuvem. O SOLARIS foi criado para o oposto:
 
-| Capacidade | O que faz |
-|---|---|
-| **Chat multi-LLM** | Conversa com Claude (Anthropic) e qualquer modelo via OpenRouter, com streaming, roteamento adaptativo e custo por mensagem exibido em tempo real |
-| **RAG local** | Indexa PDFs, DOCX, Markdown e código no SQLite local; busca trechos relevantes e os injeta automaticamente no contexto da conversa |
-| **Visão em tempo real** | Detecção de objetos ao vivo pela webcam com YOLOv8n ONNX, 80 classes COCO em português, sem GPU necessária |
-| **Aprendizado adaptativo** | Seleciona quadros da câmera, verifica rótulos e treina ciclos de candidatas localmente; promoção condicionada à avaliação |
-
-Tudo roda em CPU. Nenhum dado sai da máquina sem sua instrução explícita.
+- 🗂️ **Projetos de verdade.** Cada projeto tem suas conversas, arquivos, instruções e memória — sem misturar contextos.
+- 🧠 **Memória que persiste.** Decisões e informações importantes viram documentos Markdown versionados, que a IA relê antes de cada resposta.
+- 🔀 **O melhor modelo para cada pergunta.** Um roteador escolhe entre Claude (Anthropic) e modelos do OpenRouter, com _fallback_ automático se um provedor falhar.
+- 👁️ **Visão computacional local.** Detecção de objetos ao vivo pela câmera, rodando no seu processador — as imagens nunca saem do seu PC.
+- 🎓 **Aprende com você.** Você marca objetos novos na tela e o SOLARIS treina, avalia e só ativa um modelo melhor quando a avaliação comprova.
+- 🔒 **Privacidade por padrão.** Credenciais ficam na sua pasta de dados, nunca no instalador; a visão é 100% local.
 
 ---
 
-## Arquitetura
+## 🚀 Recursos
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Aplicativo Windows (.msi)                              │
-│                                                         │
-│  ┌─────────────────────┐   ┌──────────────────────────┐ │
-│  │  Frontend           │   │  Tauri 2 (Rust)          │ │
-│  │  React + TypeScript │◄──┤  janela · tray · IPC     │ │
-│  │  Vite · SPA         │   │  SQLite · sidecar mgmt   │ │
-│  └─────────────────────┘   └──────────┬───────────────┘ │
-│                                        │ stdin/stdout    │
-│                             ┌──────────▼───────────────┐ │
-│                             │  Python Engine (sidecar) │ │
-│                             │  FastAPI · ONNX Runtime  │ │
-│                             │  OpenCV · LangChain      │ │
-│                             │  SQLite-vec · Pyright    │ │
-│                             └──────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-          │                              │
-          ▼                              ▼
-   Anthropic / OpenRouter         Disco local
-   (somente quando o             (%APPDATA%\com.cfsjcode.solaris)
-    usuário envia mensagem)       bancos · pesos ONNX · memória
-```
+### 🗂️ Projetos como espaços de trabalho
 
-**Sem HTTP externo, sem Docker, sem banco de dados remoto.** O Tauri gerencia a janela e inicia o sidecar Python via `stdin/stdout` (JSON Lines). O frontend se comunica com o Rust por `invoke` e Channels; o Rust repassa para o Python.
+- Crie projetos com objetivo e instruções próprias; fixe os favoritos.
+- Adicione **PDF, DOCX, Markdown, TXT e código** — o texto é extraído e indexado localmente.
+- Busca textual **FTS5** isolada por projeto: a IA consulta os trechos relevantes dos seus arquivos.
+- **Fontes consultadas** em cada resposta, preservadas no histórico — você sempre sabe de onde veio a informação.
 
----
+### 💬 Chat multi-LLM inteligente
 
-## Funcionalidades
+- **Roteamento adaptativo (AMR):** perguntas simples vão para modelos rápidos e econômicos; tarefas complexas, para modelos mais capazes.
+- **Streaming** da resposta em tempo real, com renderização de Markdown (tabelas, listas, código).
+- **Controle de custos:** tokens e custo em US$ de cada resposta, por modelo e provedor.
+- **Circuit breaker:** se o provedor principal falhar, o SOLARIS tenta automaticamente o alternativo.
 
-### Projetos como espaços de trabalho
-- Crie projetos com objetivo e instruções próprias
-- Adicione PDF, DOCX, Markdown, TXT ou código à biblioteca — texto extraído e indexado localmente
-- Memória viva em Markdown: o modelo atualiza `MEMORY.md`, `AGENTS.md` e `DECISOES.md` automaticamente após decisões duráveis
-- Histórico de versões dos arquivos de memória, recuperável pela interface
+### 🧠 Memória viva em Markdown
 
-### Chat com roteamento inteligente
-- Streaming SSE com Claude e qualquer modelo OpenRouter
-- Custo estimado por mensagem (tokens de entrada + saída)
-- Fallback automático de provedor em caso de falha
-- Contexto montado dinamicamente: trechos de documentos + memória + instruções + histórico
+- Cada projeto mantém `AGENTS.md`, `README.md`, `MEMORY.md`, `DECISOES.md` e `CONTRIBUTING.md` próprios, editáveis na interface.
+- Histórico de versões com recuperação; nada é sobrescrito sem registro.
+- Pedidos como "salve isso na memória" só são confirmados **depois** da gravação efetiva, com recibo na conversa.
 
-### Visão e detecção ao vivo
-- Webcam ao vivo com YOLOv8n ONNX FP32, ~1 FPS em Ryzen 4600G (CPU only)
-- 80 classes COCO exibidas em português brasileiro
-- Pausar quadro → desenhar caixas → anotar objetos → salvar revisão no projeto
-- Aprendizado ativo: coleta quadros, descarta repetição/desfoque, verifica com detector maior, treina candidatas em processo separado
+### 👁️ Visão computacional e aprendizado ativo
 
-### Sem dependências externas obrigatórias
-- Instalador `.msi` único gerado com `scripts/build.ps1`
-- Credenciais de API em `.env` local, nunca empacotadas ou versionadas
-- SQLite como único banco de dados; sem PostgreSQL, Redis ou MinIO
+- Detecção ao vivo com **YOLO26** (modelo grande pré-carregado na inicialização; modelo leve para tempo real), com as 80 classes COCO **em português**.
+- **Pausar e revisar quadro:** desenhe, mova e nomeie caixas sobre o quadro congelado para ensinar objetos novos.
+- **Aprendizado ativo em segundo plano:** seleção de exemplos úteis, verificação com YOLO26x + OWLv2 e ByteTrack, treino em processo CPU separado com limites de memória, carga e disco.
+- **Proteção contra regressão:** uma candidata só substitui o modelo ativo se não piorar as classes que ele já reconhece; classes novas podem entrar como **complemento provisório isolado**, com aviso claro de que a generalização ainda não foi comprovada.
+- **Contexto do ambiente:** hipóteses como "escritório" ou "quarto" ajudam a investigar objetos esperados, sem inventar detecções.
 
 ---
 
-## Requisitos
+## 🏗️ Arquitetura
 
-| Item | Mínimo |
-|---|---|
-| Sistema operacional | Windows 10/11 (64-bit) |
-| CPU | x86-64 com AVX2 (Ryzen/Intel 8ª geração+) |
-| RAM | 8 GB (16 GB recomendado) |
-| Disco | 2 GB livres |
-| GPU | Não necessária |
-| Webcam | Opcional (funcionalidade de visão) |
+O SOLARIS é um **app desktop sem servidor**: não há HTTP, portas abertas, Docker ou banco externo. A interface conversa com o núcleo Rust por IPC, e o Rust conversa com o motor Python por pipes **JSON Lines**.
 
-> Desenvolvido e testado em Ryzen 5 4600G, 32 GB RAM, sem GPU discreta.
+```mermaid
+flowchart TB
+    UI["🖥️ Interface<br/>React 18 · TypeScript · Vite<br/>Design System SOLARIS"]
+    CORE["🦀 Núcleo Tauri 2 / Rust<br/>SQLite + FTS5 · projetos · memória<br/>arquivos · supervisão de processos"]
+    ENGINE["🐍 Python Engine<br/>Chat AMR · extração de documentos<br/>inferência ONNX em CPU"]
+    LEARN["🎓 Runtime de aprendizado<br/>PyTorch CPU · Ultralytics · OWLv2<br/>avaliação e exportação ONNX"]
+    LLM["☁️ Provedores LLM<br/>Anthropic · OpenRouter"]
 
----
-
-## Instalação
-
-1. Baixe o instalador na página de [Releases](https://github.com/CFSJCODE/Solaris/releases)
-2. Execute `SOLARIS_x.x.x_x64_en-US.msi` e siga o assistente
-3. Crie o arquivo de credenciais em `%APPDATA%\com.cfsjcode.solaris\.env`:
-
-```env
-ANTHROPIC_API_KEY=sk-ant-...
-OPENROUTER_API_KEY=sk-or-...
+    UI <-->|"invoke + Channels (IPC)"| CORE
+    CORE <-->|"stdin/stdout · JSON Lines UTF-8"| ENGINE
+    ENGINE -.->|"processo separado"| LEARN
+    ENGINE -->|"somente o chat, com o contexto escolhido"| LLM
 ```
 
-4. Abra o SOLARIS pelo Menu Iniciar
+| Camada          | Tecnologias                            | Responsabilidade                                                 |
+| --------------- | -------------------------------------- | ---------------------------------------------------------------- |
+| **Interface**   | React 18, TypeScript, Vite             | Projetos, chat, visão, revisão gráfica                           |
+| **Núcleo**      | Tauri 2, Rust, SQLite + FTS5           | Persistência, memória, arquivos, IPC, ciclo de vida do engine    |
+| **Engine**      | Python, ONNX Runtime, OpenCV           | Chat multi-LLM, documentos, inferência de visão                  |
+| **Aprendizado** | PyTorch CPU, Ultralytics YOLO26, OWLv2 | Verificação, treino, avaliação, exportação e promoção de modelos |
+
+**Princípios:** processamento local sempre que possível · nenhum dado de visão enviado a APIs · credenciais fora do instalador e do Git · versões de modelo preservadas com SHA-256 e reversão em caso de falha.
 
 ---
 
-## Desenvolvimento
+## 🎨 Design System SOLARIS
+
+Identidade visual própria, inspirada em Fluent UI, WinUI e Liquid Glass, com a paleta **Sunset**:
+
+|                                    Ember                                     |                                    Flare                                     |                                     Gold                                     |                                     Glow                                     |
+| :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :--------------------------------------------------------------------------: |
+| ![#EA6113](https://img.shields.io/badge/-%23EA6113-EA6113?style=flat-square) | ![#F88F22](https://img.shields.io/badge/-%23F88F22-F88F22?style=flat-square) | ![#FBB931](https://img.shields.io/badge/-%23FBB931-FBB931?style=flat-square) | ![#FFE3B3](https://img.shields.io/badge/-%23FFE3B3-FFE3B3?style=flat-square) |
+
+Gradientes contínuos, superfícies com profundidade e animações fluidas — tudo a partir de tokens `--sol-*`.
+
+---
+
+## 🔐 Privacidade e segurança
+
+- **Visão 100% local:** quadros e modelos ficam no seu computador.
+- **Chat sob seu controle:** só os trechos, instruções e histórico da conversa são enviados ao provedor que você configurou.
+- **Credenciais protegidas:** ficam em `%APPDATA%\com.cfsjcode.solaris\.env` — nunca no instalador, no Git ou nos logs.
+- **Sem execução de instruções vindas de arquivos:** documentos importados são tratados como dados, não como comandos.
+
+---
+
+## 📦 Instalação
+
+1. Baixe e execute o instalador `Solaris_<versão>_x64_en-US.msi`.
+2. Crie o arquivo `%APPDATA%\com.cfsjcode.solaris\.env` com as suas chaves:
+
+   ```env
+   ANTHROPIC_API_KEY=...
+   ANTHROPIC_WORKSPACE_ID=...   # se a sua chave for de workspace
+   OPENROUTER_API_KEY=...
+   ```
+
+3. Abra o SOLARIS pelo Menu Iniciar.
+
+> Requisitos: Windows 10/11 x64 e WebView2. Não exige GPU — a visão roda em CPU.
+
+---
+
+## 🛠️ Desenvolvimento
+
+**Pré-requisitos:** Node.js 20+, Rust estável, Python 3.12+ (engine) e Visual Studio C++ Build Tools.
 
 ```powershell
-# Pré-requisitos: Node.js 20+, Python 3.11, Rust 1.77+
-
 # Frontend
 npm --prefix frontend install
-npm --prefix frontend run dev
+npm --prefix frontend run build
 
 # Engine Python
-cd python-engine
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt -r requirements-dev.txt
+python -m venv python-engine/.venv
+python-engine/.venv/Scripts/pip install -r python-engine/requirements.txt -r python-engine/requirements-dev.txt
 
-# Testes Python (49)
-python -m pytest tests/ -v
+# Testes
+python-engine/.venv/Scripts/python -m unittest discover -s python-engine/tests
+cargo test --manifest-path src-tauri/Cargo.toml
 
-# Lint e formato
-python -m ruff check .
-python -m ruff format .
-
-# Testes Rust
-cargo test --lib --manifest-path src-tauri/Cargo.toml
-
-# Gerar instalador .msi
-.\scripts\build.ps1
+# Instalador (engine + MSI)
+./scripts/build.ps1
 ```
 
-**Antes de contribuir:** leia [`AGENTS.md`](AGENTS.md), [`MEMORY.md`](MEMORY.md), [`DECISOES.md`](DECISOES.md) e [`CONTRIBUTING.md`](CONTRIBUTING.md).
+**Qualidade de código:** `npm run format` (Prettier) · `python -m ruff format . && python -m ruff check .` (Ruff) · `npx pyright` · `cargo fmt` (rustfmt).
+
+Antes de mudanças relevantes, leia [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), [MEMORY.md](MEMORY.md) e [DECISOES.md](DECISOES.md).
 
 ---
 
-## Documentação
+## 📚 Documentação
 
-| Documento | Conteúdo |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | Regras do ciclo autônomo e do roteador de modelos |
-| [`docs/aprendizado-autonomo.md`](docs/aprendizado-autonomo.md) | Pipeline de aprendizado ativo e limites operacionais |
-| [`docs/revisao-quadros.md`](docs/revisao-quadros.md) | Interface de anotação de quadros da câmera |
-| [`docs/visao.md`](docs/visao.md) | Detalhes do subsistema de visão computacional |
-| [`DECISOES.md`](DECISOES.md) | Registro de decisões de arquitetura |
+- [Visão computacional](docs/visao.md)
+- [Aprendizado autônomo](docs/aprendizado-autonomo.md)
+- [Revisão gráfica de quadros](docs/revisao-quadros.md)
+- [Entrega e validação](docs/entrega-0.5.0.md)
+- [Conceitos matemáticos aplicados](docs/conceitos-matematicos-aplicados.md)
 
 ---
 
-## Estado atual (0.5.4)
+## 🗺️ Status e roadmap
 
-- ✅ Chat multi-LLM com streaming e custo por mensagem
-- ✅ RAG local: indexação e busca FTS5 em SQLite
-- ✅ Visão ao vivo com YOLOv8n ONNX, anotação e revisão de quadros
-- ✅ Aprendizado ativo com avaliação antes da promoção
-- ✅ Memória viva em Markdown com histórico de versões
-- ✅ Instalador `.msi` nativo Windows
-- 🔄 Classe `powerbank` em ciclo de validação (complemento provisório isolado)
-- 📋 Pendente: OCR, busca semântica por embeddings, sincronização externa de Markdown
+O SOLARIS está em **desenvolvimento ativo** (série 0.5). Já entregue: projetos, chat multi-LLM com roteamento e custos, memória Markdown, busca FTS5, visão ao vivo e ciclo completo de aprendizado ativo com proteção contra regressão.
+
+**Próximos passos:** OCR para PDFs digitalizados · busca semântica por embeddings · tela de configurações para as chaves de API · validação de melhorias reais de precisão com a câmera · descoberta de objetos além do vocabulário definido.
+
+> **Transparência:** o aprendizado ativo está implementado e protegido por avaliação, mas uma melhora real de precisão no ambiente ainda não foi demonstrada. Métricas e limites de cada entrega estão em [docs/entrega-0.5.0.md](docs/entrega-0.5.0.md).
 
 ---
 
 <div align="center">
-<sub>Projeto pessoal · Desenvolvido por CFSJCODE · Ryzen 5 4600G · CPU only</sub>
+
+Feito com ☀️ por **[CFSJCODE](https://github.com/CFSJCODE)**
+
 </div>
