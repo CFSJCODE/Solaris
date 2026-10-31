@@ -902,6 +902,24 @@ textarea.workspace-input {
   font-size: 13px;
   line-height: 1.65;
 }
+.sol-project-hint {
+  background: color-mix(in srgb, var(--sol-accent) 6%, var(--sol-bg));
+  border: 1px solid color-mix(in srgb, var(--sol-accent) 25%, transparent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sol-project-hint > span {
+  font-size: 13px;
+  color: var(--sol-text-muted);
+}
+.sol-project-hint-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .workspace-modal {
   margin: auto;
   width: min(880px, calc(100vw - 48px));
