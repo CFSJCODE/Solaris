@@ -31,12 +31,16 @@ def _write(obj: dict) -> None:
 # ── Handlers ──────────────────────────────────────────────────────────────────
 
 async def handle_chat_stream(req: dict) -> None:
+    from app.chat.memory_stream import MemoryStream
     from app.chat.providers import stream_anthropic, stream_openrouter
     from app.chat.amr import route as amr_route
 
     req_id = req["id"]
     messages = req.get("messages", [])
     system = req.get("system") or None
+    memory_required=bool(req.get("memory_required"))
+    if memory_required:
+        system=(system or '')+'\nPEDIDO EXPLÍCITO DE GRAVAÇÃO: retorne APENAS <solaris_memory>{"updates":[{"file":"MEMORY.md","content":"síntese curta dos fatos e fontes"}]}</solaris_memory>. Não prometa salvar em texto. Use o contexto e a análise anterior para sintetizar os fatos solicitados; não copie a conversa. Separe fatos documentais de decisões confirmadas. Use apenas os arquivos de memória permitidos. Se o material é parcial, registre essa limitação. Se não há informação suficiente, retorne updates vazio. A aplicação confirmará a gravação depois de persistir.'
     preferred_model = req.get("model")
     preferred_provider = req.get("provider")
 
@@ -54,6 +58,7 @@ async def handle_chat_stream(req: dict) -> None:
         return
 
     accumulated = ""
+    memory_stream = MemoryStream(req.get("memory_files"))
     errors: list[str] = []
     usage: dict = {}
 
@@ -65,7 +70,9 @@ async def handle_chat_stream(req: dict) -> None:
             async for event in gen:
                 if event["type"] == "delta":
                     accumulated += event["text"]
-                    _write({"id": req_id, "type": "chat_delta", "text": event["text"]})
+                    visible = memory_stream.feed(event["text"])
+                    if visible and not memory_required:
+                        _write({"id": req_id, "type": "chat_delta", "text": visible})
                 elif event["type"] == "done":
                     usage = event.get("usage", {})
             return True
@@ -80,13 +87,25 @@ async def handle_chat_stream(req: dict) -> None:
         fb_prov = "openrouter" if provider == "anthropic" else "anthropic"
         fb_mdl = ("google/gemma-4-31b-it:free" if fb_prov == "openrouter"
                   else "claude-haiku-5-5")
-        await stream(fb_prov, fb_mdl)
+        ok = await stream(fb_prov, fb_mdl)
 
     if not accumulated:
         _write({"id": req_id, "type": "chat_error",
                 "message": "; ".join(errors) or "Falha ao gerar resposta."})
         return
 
+    tail, updates, warning = memory_stream.finish()
+    if tail and not memory_required:
+        _write({"id": req_id, "type": "chat_delta", "text": tail})
+    if not ok:
+        _write({"id": req_id, "type": "chat_error", "message": "A resposta foi interrompida. A memória não foi atualizada."})
+        return
+    if updates:
+        _write({"id": req_id, "type": "memory_updates", "updates": updates})
+    if memory_required and not updates and not warning:
+        warning="O modelo não retornou conteúdo válido para a memória. Nenhum arquivo foi alterado."
+    if warning:
+        _write({"id": req_id, "type": "memory_update_warning", "message": warning})
     _write({"id": req_id, "type": "chat_done", "usage": usage})
 
 
@@ -152,9 +171,48 @@ async def handle_rag_delete_chunks(req: dict) -> None:
 
 async def handle_extract_text(req: dict) -> None:
     from app.rag.chunker import extract_text
-    content = base64.b64decode(req["content_b64"])
-    text = extract_text(content, req["mime_type"])
-    _write({"id": req["id"], "type": "extract_text_result", "text": text})
+    if len(req["content_b64"]) > 14_000_000:
+        raise ValueError("Arquivo maior que 10 MB.")
+    content = base64.b64decode(req["content_b64"], validate=True)
+    text = await asyncio.to_thread(extract_text, content, req["mime_type"])
+    _write({"id": req["id"], "type": "extract_text_result", "text": text, "byte_size": len(content)})
+
+
+async def handle_health(req: dict) -> None:
+    from app.vision.detector import status
+    _write({"id": req["id"], "type": "health_result", "vision": status()})
+
+
+async def handle_vision_detect(req: dict) -> None:
+    from app.vision.detector import detect
+    result = await asyncio.to_thread(detect, req["content_b64"],req.get('project_id'),bool(req.get('adapt')))
+    if req.get("adapt"):
+        from app.vision.environment import observe
+        result = observe(req.get("project_id"),result)
+        from app.vision.learning import capture
+        try:
+            await asyncio.to_thread(capture,req.get('project_id'),req['content_b64'],result)
+        except Exception:
+            result['learning_warning']='Não foi possível coletar este exemplo para aprendizado.'
+    _write({"id": req["id"], "type": "vision_result", **result})
+
+
+async def handle_learning_status(req: dict) -> None:
+    from app.vision.learning import status
+    result = await asyncio.to_thread(status,req.get('project_id'),req.get('enabled'))
+    _write({'id':req['id'],'type':'learning_result',**result})
+
+
+async def handle_learning_incorporate(req: dict) -> None:
+    from app.vision.learning import incorporate
+    result=await asyncio.to_thread(incorporate,req.get('project_id'),req['revision_id'],req['payload'],req.get('complete',False))
+    _write({'id':req['id'],'type':'learning_result',**result})
+
+
+async def handle_learning_train_now(req: dict) -> None:
+    from app.vision.learning import request_training
+    result=await asyncio.to_thread(request_training,req.get('project_id'))
+    _write({'id':req['id'],'type':'learning_result',**result})
 
 
 async def handle_vision_frame(req: dict) -> None:
@@ -167,6 +225,11 @@ async def handle_vision_frame(req: dict) -> None:
 
 
 _HANDLERS: dict[str, Any] = {
+    'learning_incorporate':handle_learning_incorporate,
+    'learning_train_now':handle_learning_train_now,
+    'learning_status':   handle_learning_status,
+    "health":            handle_health,
+    "vision_detect":     handle_vision_detect,
     "chat_stream":       handle_chat_stream,
     "models_list":       handle_models_list,
     "rag_embed":         handle_rag_embed,
@@ -236,4 +299,11 @@ if __name__ == "__main__":
     except ImportError:
         pass
 
-    asyncio.run(main_loop())
+    from app.vision.detector import start_loading
+    start_loading()
+    from app.vision.learning import start_worker,stop_worker
+    start_worker()
+    try:
+        asyncio.run(main_loop())
+    finally:
+        stop_worker()
