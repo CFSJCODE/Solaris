@@ -1,6 +1,6 @@
 [package]
 name = "solaris"
-version = "0.5.4"
+version = "0.5.5"
 description = "Solaris — Plataforma de IA pessoal"
 authors = ["CFSJCODE"]
 license = "MIT"

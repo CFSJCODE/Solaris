@@ -57,6 +57,38 @@ class VisionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "incompatível"):
             detector.postprocess(np.zeros((1, 6, 10)), 320, 320, 1, 0, 0)
 
+    def test_raw_output_uses_model_labels_for_open_images(self):
+        labels = [f"classe {i}" for i in range(601)]
+        output = np.zeros((1, 605, 2), dtype=np.float32)
+        output[0, :4, 0] = [100, 100, 50, 50]
+        output[0, 4 + 587, 0] = 0.8  # "Window" no Open Images V7
+        boxes = detector.postprocess(output, 640, 640, 1, 0, 0, labels)
+        self.assertEqual([(b["class_id"], b["label"]) for b in boxes], [(587, "classe 587")])
+
+    def test_oiv7_adds_only_classes_outside_coco_with_offset_ids(self):
+        english = ["Person", "Door", "Chair", "Window", "Human face"]
+        primary = [{"class_id": 0, "label": "pessoa", "confidence": 0.9}]
+        extra = [
+            {"class_id": 0, "label": "pessoa", "confidence": 0.8},
+            {"class_id": 1, "label": "porta", "confidence": 0.7},
+            {"class_id": 2, "label": "cadeira", "confidence": 0.6},
+            {"class_id": 3, "label": "janela", "confidence": 0.5},
+            {"class_id": 4, "label": "rosto humano", "confidence": 0.9},
+        ]
+        merged = detector.merge_oiv7_detections(primary, extra, english)
+        self.assertEqual([d["label"] for d in merged], ["pessoa", "porta", "janela"])
+        self.assertEqual(merged[1]["class_id"], detector.OIV7_CLASS_OFFSET + 1)
+        self.assertEqual(merged[1]["source"], "oiv7")
+
+    def test_missing_oiv7_keeps_primary_detector_only(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(os.environ, {"SOLARIS_STORAGE": directory}),
+            patch.object(detector, "__file__", str(Path(directory) / "a" / "b" / "c" / "d.py")),
+        ):
+            self.assertIsNone(detector.oiv7_model_path())
+            self.assertIsNone(detector.oiv7_session())
+
     def test_supplemental_inference_keeps_only_new_class_predictions(self):
         boxes = [
             {
