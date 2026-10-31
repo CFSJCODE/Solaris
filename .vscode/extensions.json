@@ -1,9 +1,9 @@
 {
   "recommendations": [
     "esbenp.prettier-vscode",
-    "charliermarsh.ruff",
     "ms-python.python",
     "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
     "rust-lang.rust-analyzer",
     "ms-vscode.powershell"
   ]
