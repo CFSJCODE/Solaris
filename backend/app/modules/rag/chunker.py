@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-CHUNK_SIZE = 512      # caracteres por chunk
-CHUNK_OVERLAP = 64    # sobreposição entre chunks consecutivos
+CHUNK_SIZE = 512  # caracteres por chunk
+CHUNK_OVERLAP = 64  # sobreposição entre chunks consecutivos
 
 
 def chunk_text(text: str) -> list[str]:
@@ -34,9 +34,10 @@ def extract_text(content: bytes, mime_type: str) -> str:
 
 def _extract_pdf(content: bytes) -> str:
     try:
+        import io
+
         from pdfminer.high_level import extract_text_to_fp
         from pdfminer.layout import LAParams
-        import io
 
         out = io.StringIO()
         extract_text_to_fp(io.BytesIO(content), out, laparams=LAParams())

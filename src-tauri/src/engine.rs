@@ -73,7 +73,19 @@ impl EngineState {
                             cb(val);
                         }
                     }
-                    CommandEvent::Terminated(_) => break,
+                    CommandEvent::Terminated(_) => {
+                        let callbacks = {
+                            let mut guard = state_clone.0.lock().unwrap();
+                            guard.child = None;
+                            std::mem::take(&mut guard.pending)
+                        };
+                        for (id, callback) in callbacks {
+                            callback(
+                                serde_json::json!({"id": id, "type": "error", "message": "O motor foi encerrado."}),
+                            );
+                        }
+                        break;
+                    }
                     _ => {}
                 }
             }

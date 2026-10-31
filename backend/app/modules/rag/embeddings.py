@@ -7,7 +7,6 @@ então o startup do app é rápido mesmo sem o arquivo ONNX presente.
 from __future__ import annotations
 
 import numpy as np
-from pathlib import Path
 
 _session = None
 _tokenizer = None
@@ -19,9 +18,10 @@ def _load():
     if _session is not None:
         return
 
-    from app.core.config import settings
     import onnxruntime as ort
     from tokenizers import Tokenizer
+
+    from app.core.config import settings
 
     model_path = settings.embeddings_model_path
     if not model_path.exists():

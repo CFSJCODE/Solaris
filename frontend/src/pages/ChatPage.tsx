@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, KeyboardEvent, FormEvent } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { invoke } from "@tauri-apps/api/core"
+import { ProjectFile, FILE_ACCEPT, uploadProjectFile } from "../projectApi"
 import { useChat, ChatMessage, Conversation } from "../hooks/useChat"
 
 // ── Formatting helpers ──────────────────────────────────────────────────────
@@ -13,7 +15,13 @@ function formatCost(usd: number): string {
 
 function providerLabel(provider?: string, model?: string): string {
   if (!provider) return ""
-  const shortModel = model?.split("/").pop()?.replace(/:free$/, "") ?? model ?? ""
+  const shortModel =
+    model
+      ?.split("/")
+      .pop()
+      ?.replace(/:free$/, "") ??
+    model ??
+    ""
   const p = provider === "anthropic" ? "Anthropic" : "OpenRouter"
   return `${p} · ${shortModel}`
 }
@@ -66,9 +74,11 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
           borderRadius: isUser
             ? "var(--sol-radius-lg) var(--sol-radius-lg) var(--sol-radius-sm) var(--sol-radius-lg)"
             : "var(--sol-radius-lg) var(--sol-radius-lg) var(--sol-radius-lg) var(--sol-radius-sm)",
-          background: isUser ? "var(--sol-sunset)" : "var(--sol-optical-surface, var(--sol-surface))",
+          background: isUser
+            ? "var(--sol-sunset)"
+            : "var(--sol-optical-surface, var(--sol-surface))",
           border: isUser ? "none" : "1px solid var(--sol-border)",
-          color: isUser ? "#fff" : "var(--sol-text)",
+          color: isUser ? "var(--sol-ink-950)" : "var(--sol-text)",
           fontSize: 14,
           lineHeight: 1.6,
           wordBreak: "break-word",
@@ -128,6 +138,47 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
         )}
       </div>
 
+      {!isUser && !!msg.sources?.length && (
+        <details className="message-sources">
+          <summary>
+            Fontes consultadas · {[...new Set(msg.sources.map((s) => s.filename))].join(", ")}
+          </summary>
+          {msg.sources.map((source, i) => (
+            <div key={i}>
+              <strong>{source.filename}</strong>
+              <small>
+                {source.kind === "memory"
+                  ? "Memória do projeto"
+                  : source.kind === "environment"
+                    ? "Perfil de observação do ambiente"
+                    : "Arquivo de referência"}{" "}
+                · {source.citation}
+              </small>
+              <p>{source.content}</p>
+            </div>
+          ))}
+        </details>
+      )}
+      {!isUser &&
+        !msg.memoryReport &&
+        /vou (salvar|registrar)|salvei|memória atualizada/i.test(msg.content) && (
+          <p className="workspace-muted">
+            Esta resposta não possui confirmação de gravação da memória.
+          </p>
+        )}
+      {!isUser && msg.memoryReport && (
+        <div className={`message-memory-report ${msg.memoryReport.state}`} role="status">
+          <strong>
+            {msg.memoryReport.state === "saved"
+              ? "Memória gravada"
+              : msg.memoryReport.state === "unchanged"
+                ? "Memória já atualizada"
+                : "Memória não gravada"}
+          </strong>
+          {!!msg.memoryReport.files.length && <span>{msg.memoryReport.files.join(", ")}</span>}
+          <p>{msg.memoryReport.detail}</p>
+        </div>
+      )}
       {/* Model + cost badge for assistant messages */}
       {!isUser && msg.provider && (
         <div
@@ -198,7 +249,14 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew, onDelet
 
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--sol-space-2)" }}>
         {conversations.length === 0 && (
-          <p style={{ fontSize: 12, color: "var(--sol-text-muted)", padding: "var(--sol-space-3)", textAlign: "center" }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--sol-text-muted)",
+              padding: "var(--sol-space-3)",
+              textAlign: "center",
+            }}
+          >
             Nenhuma conversa
           </p>
         )}
@@ -262,8 +320,25 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew, onDelet
 
 // ── Main ChatPage ───────────────────────────────────────────────────────────
 
-export default function ChatPage() {
+export default function ChatPage({
+  initialConversationId,
+  projectId,
+  memoryEnabled,
+  projects,
+  onBusy,
+}: {
+  initialConversationId: number | null
+  projectId: number | null
+  memoryEnabled: boolean
+  projects: { id: number; name: string }[]
+  onBusy: (busy: boolean) => void
+}) {
   const {
+    error,
+    memorySources,
+    contextSources,
+    memorySaved,
+    memoryWarning,
     conversations,
     activeConversation,
     messages,
@@ -274,8 +349,57 @@ export default function ChatPage() {
     newConversation,
     deleteConversation,
     sendMessage,
-    stopStreaming,
-  } = useChat()
+    moveConversation,
+  } = useChat(projectId, memoryEnabled)
+
+  const [files, setFiles] = useState<ProjectFile[]>([])
+  const [attachmentIds, setAttachmentIds] = useState<number[]>([])
+  const [useProjectFiles, setUseProjectFiles] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [fileError, setFileError] = useState("")
+  const attachmentInput = useRef<HTMLInputElement>(null)
+  const initialLoaded = useRef(false)
+  useEffect(() => {
+    invoke<ProjectFile[]>("project_list_files", { projectId })
+      .then(setFiles)
+      .catch((err) => setFileError(String(err)))
+  }, [projectId])
+  useEffect(() => {
+    if (
+      initialConversationId &&
+      conversations.some((c) => c.id === initialConversationId) &&
+      !initialLoaded.current
+    ) {
+      initialLoaded.current = true
+      void loadConversation(initialConversationId)
+    }
+  }, [initialConversationId, conversations, loadConversation])
+  useEffect(() => {
+    onBusy(isStreaming || uploading)
+    return () => onBusy(false)
+  }, [isStreaming, uploading, onBusy])
+  async function attach(incoming: FileList | null) {
+    if (!incoming) return
+    setUploading(true)
+    setFileError("")
+    const errors: string[] = []
+    const ids: number[] = []
+    for (const file of Array.from(incoming).slice(0, 12)) {
+      try {
+        ids.push(await uploadProjectFile(projectId, file))
+      } catch (err) {
+        errors.push(String(err))
+      }
+    }
+    try {
+      setFiles(await invoke<ProjectFile[]>("project_list_files", { projectId }))
+      setAttachmentIds((prev) => [...new Set([...prev, ...ids])].slice(0, 12))
+    } catch (err) {
+      errors.push(String(err))
+    }
+    setFileError(errors.join("\n"))
+    setUploading(false)
+  }
 
   const [input, setInput] = useState("")
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -296,7 +420,8 @@ export default function ChatPage() {
     if (!text || isStreaming) return
     setInput("")
     if (textareaRef.current) textareaRef.current.style.height = "auto"
-    await sendMessage(text)
+    await sendMessage(text, attachmentIds, useProjectFiles)
+    setAttachmentIds([])
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -314,7 +439,7 @@ export default function ChatPage() {
   }
 
   const handleNew = async () => {
-    await newConversation()
+    if (!isStreaming) await newConversation()
   }
 
   return (
@@ -423,71 +548,120 @@ export default function ChatPage() {
         <ConversationSidebar
           conversations={conversations}
           activeId={activeConversation?.id}
-          onSelect={loadConversation}
+          onSelect={(id) => {
+            if (!isStreaming) void loadConversation(id)
+          }}
           onNew={handleNew}
-          onDelete={deleteConversation}
+          onDelete={(id) => {
+            if (!isStreaming) void deleteConversation(id)
+          }}
         />
 
         {/* Main chat area */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
           {/* Header */}
-          <div style={{
-            padding: "var(--sol-space-3) var(--sol-space-6)",
-            borderBottom: "1px solid var(--sol-border)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            background: "var(--sol-surface)",
-            flexShrink: 0,
-          }}>
+          <div
+            style={{
+              padding: "var(--sol-space-3) var(--sol-space-6)",
+              borderBottom: "1px solid var(--sol-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "var(--sol-surface)",
+              flexShrink: 0,
+            }}
+          >
             <div>
               <span style={{ fontSize: 14, fontWeight: 600, color: "var(--sol-text)" }}>
                 {activeConversation?.title ?? "Chat"}
               </span>
             </div>
+            {activeConversation && (
+              <label>
+                Mover conversa para
+                <select
+                  className="project-input"
+                  disabled={isStreaming}
+                  value={projectId ?? ""}
+                  onChange={(e) =>
+                    void moveConversation(e.target.value ? Number(e.target.value) : null)
+                  }
+                >
+                  <option value="">Sem projeto</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {streamingModel && (
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--sol-space-2)",
-                fontSize: 12,
-                color: "var(--sol-flare)",
-              }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--sol-space-2)",
+                  fontSize: 12,
+                  color: "var(--sol-flare)",
+                }}
+              >
                 <StreamingDots />
                 <span>{streamingModel}</span>
               </div>
             )}
           </div>
 
+          {error && (
+            <p role="alert" className="sol-error">
+              {error}
+            </p>
+          )}
+          {memorySources.length > 0 && (
+            <details className="sol-memory-sources">
+              <summary>Contexto recuperado de {memorySources.length} trechos do projeto</summary>
+              {memorySources.map((source, i) => (
+                <div key={i}>
+                  <strong>{source.title}</strong>
+                  <p>{source.content}</p>
+                </div>
+              ))}
+            </details>
+          )}
           {/* Messages */}
-          <div style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "var(--sol-space-6)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--sol-space-4)",
-          }}>
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "var(--sol-space-6)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--sol-space-4)",
+            }}
+          >
             {messages.length === 0 && !isStreaming && (
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                flex: 1,
-                gap: "var(--sol-space-4)",
-                color: "var(--sol-text-muted)",
-              }}>
-                <div style={{
-                  fontSize: 32,
-                  fontWeight: 700,
-                  background: "var(--sol-sunset)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  letterSpacing: "0.08em",
-                }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
+                  gap: "var(--sol-space-4)",
+                  color: "var(--sol-text-muted)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 32,
+                    fontWeight: 700,
+                    background: "var(--sol-sunset)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    letterSpacing: "0.08em",
+                  }}
+                >
                   SOLARIS
                 </div>
                 <p style={{ fontSize: 15 }}>Olá, como posso ajudar?</p>
@@ -505,6 +679,80 @@ export default function ChatPage() {
             <div ref={bottomRef} />
           </div>
 
+          {(memorySaved.length > 0 || memoryWarning) && (
+            <p role="status" className="chat-context-status">
+              {memoryWarning || `Memórias atualizadas: ${memorySaved.join(", ")}`}
+            </p>
+          )}
+          {contextSources.length > 0 && isStreaming && (
+            <p className="chat-context-status">
+              Consultando {new Set(contextSources.map((s) => s.filename)).size} arquivos do projeto.
+            </p>
+          )}
+          {fileError && (
+            <p role="alert" className="workspace-error">
+              {fileError}
+            </p>
+          )}
+          <div className="chat-attachment-bar">
+            <input
+              ref={attachmentInput}
+              className="sr-only"
+              type="file"
+              multiple
+              accept={FILE_ACCEPT}
+              onChange={(e) => {
+                void attach(e.target.files)
+                e.target.value = ""
+              }}
+            />
+            <button
+              className="btn-ghost"
+              disabled={isStreaming || uploading}
+              onClick={() => attachmentInput.current?.click()}
+            >
+              {uploading ? "Lendo arquivos…" : "Anexar arquivos"}
+            </button>
+            <details>
+              <summary>Arquivos do projeto ({files.length})</summary>
+              <div className="chat-file-picker">
+                {files.map((file) => (
+                  <label key={file.id}>
+                    <input
+                      type="checkbox"
+                      disabled={
+                        isStreaming ||
+                        uploading ||
+                        (!attachmentIds.includes(file.id) && attachmentIds.length >= 12)
+                      }
+                      checked={attachmentIds.includes(file.id)}
+                      onChange={(e) =>
+                        setAttachmentIds((prev) =>
+                          e.target.checked
+                            ? [...prev, file.id]
+                            : prev.filter((id) => id !== file.id),
+                        )
+                      }
+                    />
+                    {file.filename}
+                  </label>
+                ))}
+                {!files.length && <p>Nenhum arquivo adicionado.</p>}
+              </div>
+            </details>
+            <label>
+              <input
+                type="checkbox"
+                checked={useProjectFiles}
+                disabled={isStreaming}
+                onChange={(e) => setUseProjectFiles(e.target.checked)}
+              />
+              Buscar no projeto
+            </label>
+            {attachmentIds.length > 0 && (
+              <span>{attachmentIds.length} anexo(s) selecionado(s)</span>
+            )}
+          </div>
           {/* Input area */}
           <form
             onSubmit={handleSend}
@@ -526,7 +774,7 @@ export default function ChatPage() {
               onInput={handleTextareaInput}
               placeholder="Mensagem… (Enter para enviar, Shift+Enter nova linha)"
               rows={1}
-              disabled={isStreaming}
+              disabled={isStreaming || uploading}
               className="sol-focusable"
               style={{
                 flex: 1,
@@ -556,9 +804,9 @@ export default function ChatPage() {
             {isStreaming ? (
               <button
                 type="button"
-                onClick={stopStreaming}
+                disabled
                 className="sol-focusable sol-transition"
-                title="Parar"
+                title="Aguarde a conclusão da resposta"
                 style={{
                   width: 42,
                   height: 42,
@@ -574,12 +822,12 @@ export default function ChatPage() {
                   justifyContent: "center",
                 }}
               >
-                ◼
+                …
               </button>
             ) : (
               <button
                 type="submit"
-                disabled={!input.trim()}
+                disabled={!input.trim() || uploading}
                 className="sol-focusable sol-transition"
                 title="Enviar"
                 style={{
@@ -589,7 +837,7 @@ export default function ChatPage() {
                   borderRadius: "var(--sol-radius-lg)",
                   border: "none",
                   background: input.trim() ? "var(--sol-sunset)" : "var(--sol-border)",
-                  color: input.trim() ? "#fff" : "var(--sol-text-muted)",
+                  color: input.trim() ? "var(--sol-ink-950)" : "var(--sol-text-muted)",
                   cursor: input.trim() ? "pointer" : "default",
                   fontSize: 16,
                   display: "flex",

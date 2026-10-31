@@ -1,0 +1,16 @@
+# Prettier formata tudo que suporta (TS/TSX/JS/MJS, CSS, JSON, Markdown, HTML, YAML).
+# Aqui ficam só arquivos gerados, de terceiros ou legados.
+node_modules/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+**/.venv/
+src-tauri/target/
+src-tauri/gen/
+storage/
+models/
+backend/
+package-lock.json
+*.lock

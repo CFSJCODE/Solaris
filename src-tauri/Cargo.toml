@@ -1,6 +1,6 @@
 [package]
 name = "solaris"
-version = "0.1.0"
+version = "0.5.4"
 description = "Solaris — Plataforma de IA pessoal"
 authors = ["CFSJCODE"]
 license = "MIT"
@@ -11,7 +11,7 @@ rust-version = "1.77.2"
 
 [lib]
 name = "solaris_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [[bin]]
 name = "solaris"
@@ -33,3 +33,8 @@ uuid = { version = "1", features = ["v4"] }
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+# A janela Windows faz IPC; a inferência pesada fica no engine ONNX.
+[profile.release.package.solaris]
+opt-level = 1
+codegen-units = 16

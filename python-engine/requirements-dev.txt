@@ -1,0 +1,3 @@
+# Ferramentas de desenvolvimento (não entram no engine empacotado)
+ruff>=0.8
+pyright

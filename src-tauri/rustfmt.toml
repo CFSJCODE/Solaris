@@ -1,0 +1,3 @@
+# rustfmt: formatador oficial do Rust (cargo fmt). Só opções estáveis.
+edition = "2021"
+max_width = 100

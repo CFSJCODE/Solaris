@@ -7,12 +7,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db, SessionLocal
-from app.modules.rag.models import Document, Chunk
+from app.core.database import get_db
 from app.modules.rag import chunker, embeddings, vector_store
+from app.modules.rag.models import Chunk, Document
 
 router = APIRouter()
 
@@ -25,6 +25,7 @@ MAX_FILE_MB = 20
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class DocumentOut(BaseModel):
     id: int
@@ -44,6 +45,7 @@ class SearchResult(BaseModel):
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @router.get("/", response_model=list[DocumentOut])
 async def list_documents(
@@ -102,9 +104,7 @@ async def upload_document(
         chunk_objs.append(
             Chunk(document_id=doc.id, chunk_index=i, content=text_chunk, chroma_id=cid)
         )
-        metas.append(
-            {"document_id": doc.id, "filename": doc.filename, "chunk_index": i}
-        )
+        metas.append({"document_id": doc.id, "filename": doc.filename, "chunk_index": i})
 
     db.add_all(chunk_objs)
 
@@ -157,6 +157,7 @@ async def search_documents(
 
 
 # ── Função helper para o módulo de chat ──────────────────────────────────────
+
 
 async def retrieve_context(query: str, project_id: int | None, n: int = 3) -> str:
     """Retorna contexto RAG formatado para injetar no prompt do chat."""

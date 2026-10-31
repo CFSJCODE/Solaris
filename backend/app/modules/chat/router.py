@@ -5,20 +5,20 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.database import SessionLocal, get_db
 from app.modules.chat.models import Conversation, Message
+from app.modules.chat.providers import stream_anthropic, stream_openrouter
+from app.modules.chat.router_amr import route as amr_route
 from app.modules.chat.schemas import (
     ChatRequest,
     ConversationCreate,
     ConversationDetail,
     ConversationOut,
 )
-from app.modules.chat.providers import stream_anthropic, stream_openrouter
-from app.modules.chat.router_amr import route as amr_route
 from app.modules.rag.router import retrieve_context
 
 router = APIRouter()
@@ -44,16 +44,12 @@ def _sse(payload: dict) -> str:
 
 @router.get("/conversations", response_model=list[ConversationOut])
 async def list_conversations(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Conversation).order_by(Conversation.updated_at.desc())
-    )
+    result = await db.execute(select(Conversation).order_by(Conversation.updated_at.desc()))
     return result.scalars().all()
 
 
 @router.post("/conversations", response_model=ConversationOut, status_code=201)
-async def create_conversation(
-    body: ConversationCreate, db: AsyncSession = Depends(get_db)
-):
+async def create_conversation(body: ConversationCreate, db: AsyncSession = Depends(get_db)):
     conv = Conversation(title=body.title, project_id=body.project_id)
     db.add(conv)
     await db.flush()
@@ -91,14 +87,34 @@ async def list_models():
     models = []
     if _has_anthropic():
         models += [
-            {"provider": "anthropic", "model": "claude-haiku-3-5-20251101", "label": "Claude Haiku 3.5"},
-            {"provider": "anthropic", "model": "claude-sonnet-4-5-20250514", "label": "Claude Sonnet 4.5"},
+            {
+                "provider": "anthropic",
+                "model": "claude-haiku-3-5-20251101",
+                "label": "Claude Haiku 3.5",
+            },
+            {
+                "provider": "anthropic",
+                "model": "claude-sonnet-4-5-20250514",
+                "label": "Claude Sonnet 4.5",
+            },
         ]
     if _has_openrouter():
         models += [
-            {"provider": "openrouter", "model": "meta-llama/llama-3.1-8b-instruct:free", "label": "Llama 3.1 8B (free)"},
-            {"provider": "openrouter", "model": "mistralai/mistral-7b-instruct:free", "label": "Mistral 7B (free)"},
-            {"provider": "openrouter", "model": "google/gemma-2-9b-it:free", "label": "Gemma 2 9B (free)"},
+            {
+                "provider": "openrouter",
+                "model": "meta-llama/llama-3.1-8b-instruct:free",
+                "label": "Llama 3.1 8B (free)",
+            },
+            {
+                "provider": "openrouter",
+                "model": "mistralai/mistral-7b-instruct:free",
+                "label": "Mistral 7B (free)",
+            },
+            {
+                "provider": "openrouter",
+                "model": "google/gemma-2-9b-it:free",
+                "label": "Gemma 2 9B (free)",
+            },
         ]
     return {"models": models, "amr_enabled": True}
 
@@ -155,7 +171,12 @@ async def send_message(conv_id: int, body: ChatRequest):
                 reason = sel.reason
 
             if not prov:
-                yield _sse({"type": "error", "message": "Nenhum provider configurado. Adicione ANTHROPIC_API_KEY ou OPENROUTER_API_KEY no .env"})
+                yield _sse(
+                    {
+                        "type": "error",
+                        "message": "Nenhum provider configurado. Adicione ANTHROPIC_API_KEY ou OPENROUTER_API_KEY no .env",
+                    }
+                )
                 return
 
             yield _sse({"type": "model", "provider": prov, "model": model, "reason": reason})
@@ -168,7 +189,11 @@ async def send_message(conv_id: int, body: ChatRequest):
             async def do_stream(provider: str, mdl: str) -> bool:
                 nonlocal accumulated, usage_data, last_error
                 try:
-                    gen = stream_anthropic(history, mdl) if provider == "anthropic" else stream_openrouter(history, mdl)
+                    gen = (
+                        stream_anthropic(history, mdl)
+                        if provider == "anthropic"
+                        else stream_openrouter(history, mdl)
+                    )
                     async for event in gen:
                         if event["type"] == "delta":
                             accumulated += event["text"]
@@ -209,7 +234,14 @@ async def send_message(conv_id: int, body: ChatRequest):
                 has_fallback = has_or if fallback_prov == "openrouter" else has_ant
 
                 if has_fallback:
-                    yield _sse({"type": "model", "provider": fallback_prov, "model": fallback_mdl, "reason": "fallback"})
+                    yield _sse(
+                        {
+                            "type": "model",
+                            "provider": fallback_prov,
+                            "model": fallback_mdl,
+                            "reason": "fallback",
+                        }
+                    )
                     try:
                         gen2 = (
                             stream_anthropic(history, fallback_mdl, system=system_prompt)
