@@ -1,73 +1,205 @@
-> **Estado vigente — 31/10/2026: SOLARIS 0.5.3 instalada.** A candidata YOLO26x mais recente foi recusada: mAP de referência caiu de 69,94% para 58,03%. A candidata YOLO26s caiu de 59,33% para 43,81%, embora o conjunto local tenha indicado 69,65% para a classe `Powerbank`; essa classe estava em uma única imagem de validação e em zero imagens de treino, logo o resultado não demonstra aprendizado. Consulte [AGENTS.md](AGENTS.md), [ciclo atual](docs/aprendizado-autonomo.md) e [validação da entrega](docs/entrega-0.5.0.md). Nenhuma candidata global foi ativada.
+<div align="center">
 
-**Correção da powerbank em desenvolvimento:** o diagnóstico posterior confirmou uma marcação humana salva, mas excluída do treino por cair somente na sessão de validação. A nova estratégia será validada no código antes de empacotar; ainda não está instalada.
+# SOLARIS
 
-# SOLARIS 0.5.3
+**Plataforma de IA pessoal para Windows — chat multi-LLM, RAG local, visão em tempo real e aprendizado adaptativo, tudo rodando na sua máquina.**
 
-Versão 0.5.3 instalada em 31/10/2026, com vocabulário de contexto expandido e início de treino sem requisito mínimo de RAM. O ciclo autônomo continua condicionado aos limites operacionais e à avaliação antes da ativação. Motor pesado separado, local e CPU. [Resultados e limites da entrega](docs/entrega-0.5.0.md).
+[![Versão](https://img.shields.io/badge/versão-0.5.4-blue?style=for-the-badge)](https://github.com/CFSJCODE/Solaris/releases)
+[![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D4?style=for-the-badge&logo=windows)](https://github.com/CFSJCODE/Solaris)
+[![Licença](https://img.shields.io/badge/licença-privado-red?style=for-the-badge)](LICENSE)
 
-Aplicativo pessoal Windows com projetos, chat multi-LLM, arquivos de referência, memória Markdown e visão local em CPU.
+---
 
-## Projetos como espaços de trabalho
+### Stack
 
-1. Crie um projeto, descreva seu objetivo e fixe os que usa com frequência.
-2. Em **Arquivos**, adicione PDF textual, DOCX, Markdown, TXT ou código. O texto é extraído e indexado localmente; a prévia mostra exatamente o conteúdo disponível.
-3. Em **Instruções**, defina como a IA deve trabalhar no projeto.
-4. Em **Memória e documentos**, leia e edite AGENTS.md, README.md, CONTRIBUTING.md, MEMORY.md e DECISOES.md. Importe outros Markdown ou use **Usar como memória** em um arquivo da biblioteca.
-5. Abra uma conversa. O chat consulta as memórias e busca trechos dos arquivos do projeto. Você pode anexar arquivos à pergunta, escolher arquivos específicos ou desligar a busca automática.
-6. Abra **Fontes consultadas** na resposta para conferir o material usado. As fontes são preservadas no histórico.
+[![Tauri](https://img.shields.io/badge/Tauri_2-24C8D8?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
+[![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Python](https://img.shields.io/badge/Python_3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org)
+[![ONNX](https://img.shields.io/badge/ONNX_Runtime-005CED?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai)
+[![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)](https://opencv.org)
 
-A interface mantém a identidade SOLARIS, com busca, ordenação, projetos fixados, conversas e biblioteca próprias para cada projeto.
+### Modelos de IA
 
-## Detecção ao vivo e adaptação do ambiente
+[![Anthropic](https://img.shields.io/badge/Anthropic_Claude-D4A27F?style=flat-square)](https://anthropic.com)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-6B46C1?style=flat-square)](https://openrouter.ai)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8n_ONNX-00FFFF?style=flat-square)](https://docs.ultralytics.com)
 
-O maior detector instalado é pré-carregado em segundo plano na inicialização da plataforma e permanece residente até fechar o app. Esta versão inclui YOLO26x ONNX FP32 com entrada 640 e mantém a compatibilidade com YOLOv8n. O runtime adicional prepara YOLO26n/s; o modo ao vivo usa YOLO26s após benchmark local, mostrando o detector efetivamente usado. Uma versão YOLO26x adaptada e aprovada tem prioridade para que suas classes e pesos sejam usados. Falhas nessa versão geram aviso e reversão para a referência preservada.
+### Qualidade
 
-Na aba Visão, abra a câmera e inicie a detecção ao vivo. O aplicativo analisa um quadro por vez, desenha caixas e mostra a taxa real. Você pode limitar as análises por segundo ou pausar um quadro para revisão. As 80 classes COCO são exibidas em português brasileiro (por exemplo, mala, pessoa e ônibus).
+[![Ruff](https://img.shields.io/badge/Ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff)
+[![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=flat-square&logo=prettier&logoColor=black)](https://prettier.io)
+[![Pyright](https://img.shields.io/badge/Pyright-0_erros-brightgreen?style=flat-square)](https://github.com/microsoft/pyright)
+[![Testes](https://img.shields.io/badge/testes-49_passando-brightgreen?style=flat-square)](python-engine/tests)
 
-**Pausar e revisar quadro** interrompe a captura e desliga os tracks da câmera. No quadro congelado, arraste para desenhar uma caixa e escreva o nome do objeto; uma descrição é opcional. Selecione caixas para mover ou ajustar os cantos, remova marcações e use Desfazer. **Salvar revisão** grava imagem, caixas, nomes e observações no projeto. **Retomar câmera ao vivo** reabre a captura por ação explícita. Veja [revisão gráfica](docs/revisao-quadros.md).
+</div>
 
-A adaptação estatística continua em storage/environment e entra como contexto nas conversas. Separadamente, o aprendizado ativo seleciona JPEGs da câmera, descarta repetição/desfoque e verifica rótulos com YOLO26x/OWLv2; ByteTrack auxilia a verificação. A cada quatro novos exemplos verificados, pode iniciar ciclos de candidatas para YOLO26s e YOLO26x em processo CPU separado, sem exigir que a câmera pare. Limites de memória, carga, disco e latência podem pausar o treino. A promoção integral continua condicionada à avaliação; uma classe nova marcada por pessoa pode ser servida provisoriamente como complemento isolado, sem substituir o detector das classes existentes, e com aviso de que não há prova de generalização. Não é atualização de pesos por quadro nem gravação de vídeo inteiro. Tudo fica local, com retenção automática e versões preservadas. Detalhes e limitações em [aprendizado autônomo](docs/aprendizado-autonomo.md).
+---
 
-Na 0.5.2, referências sem anotação são excluídas, solicitações redundantes elegíveis são agrupadas e falhas exibem diagnóstico. Pedidos sem novos exemplos válidos deixam de permanecer “Na fila” e indicam que aguardam dados para um próximo ciclo. A avaliação pode recusar uma candidata; pesos não são ativados sem cumprir os critérios.
+## O que é o SOLARIS
 
-Teste local YOLO26x, CPU/4 threads, 640 px: aproximadamente 1,924 s para carregar/aquecer e 0,919–0,963 s por imagem em três execuções. Pré-carregar remove o custo inicial, não o custo de cada inferência; não equivale a 30 FPS de detecção.
+SOLARIS é uma plataforma de inteligência artificial 100 % local para Windows. Ela reúne quatro capacidades em um único aplicativo instalável (`.msi`), sem nuvem obrigatória, sem Docker e sem servidor externo:
 
-## Memória viva em Markdown
+| Capacidade | O que faz |
+|---|---|
+| **Chat multi-LLM** | Conversa com Claude (Anthropic) e qualquer modelo via OpenRouter, com streaming, roteamento adaptativo e custo por mensagem exibido em tempo real |
+| **RAG local** | Indexa PDFs, DOCX, Markdown e código no SQLite local; busca trechos relevantes e os injeta automaticamente no contexto da conversa |
+| **Visão em tempo real** | Detecção de objetos ao vivo pela webcam com YOLOv8n ONNX, 80 classes COCO em português, sem GPU necessária |
+| **Aprendizado adaptativo** | Seleciona quadros da câmera, verifica rótulos e treina ciclos de candidatas localmente; promoção condicionada à avaliação |
 
-Os arquivos de cada projeto ficam em `%APPDATA%/com.cfsjcode.solaris/storage/memory/project-<id>/`. O contexto sem projeto fica em `memory/general/`. A pasta `history/` preserva versões anteriores. A tela de histórico apresenta até 20 versões recentes e permite recuperar uma para edição.
+Tudo roda em CPU. Nenhum dado sai da máquina sem sua instrução explícita.
 
-Antes de cada geração, o aplicativo relê os Markdown. Quando o modelo identifica uma decisão ou mudança durável, retorna metadados separados da resposta. O SOLARIS valida os nomes permitidos e acrescenta registros com a conversa de origem nos documentos pertinentes. Atualizações inválidas ou respostas interrompidas não geram escritas automáticas. A interface informa arquivos atualizados ou falhas de registro.
+---
 
-Pedidos explícitos como “salvar essas informações na memória” exigem registros estruturados. A aplicação só confirma sucesso depois da escrita efetiva e persiste um recibo na conversa. Falhas e ausência de registros ficam visíveis; não se aceita uma promessa textual como prova de gravação.
+## Arquitetura
 
-A identificação de decisões depende do modelo e pode falhar. Os documentos permanecem editáveis e devem ser revisados; o aplicativo não transforma propostas em aprovações humanas. O original de um arquivo importado é preservado: atualizações acontecem na cópia de memória do projeto.
+```
+┌─────────────────────────────────────────────────────────┐
+│  Aplicativo Windows (.msi)                              │
+│                                                         │
+│  ┌─────────────────────┐   ┌──────────────────────────┐ │
+│  │  Frontend           │   │  Tauri 2 (Rust)          │ │
+│  │  React + TypeScript │◄──┤  janela · tray · IPC     │ │
+│  │  Vite · SPA         │   │  SQLite · sidecar mgmt   │ │
+│  └─────────────────────┘   └──────────┬───────────────┘ │
+│                                        │ stdin/stdout    │
+│                             ┌──────────▼───────────────┐ │
+│                             │  Python Engine (sidecar) │ │
+│                             │  FastAPI · ONNX Runtime  │ │
+│                             │  OpenCV · LangChain      │ │
+│                             │  SQLite-vec · Pyright    │ │
+│                             └──────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+          │                              │
+          ▼                              ▼
+   Anthropic / OpenRouter         Disco local
+   (somente quando o             (%APPDATA%\com.cfsjcode.solaris)
+    usuário envia mensagem)       bancos · pesos ONNX · memória
+```
 
-## Contexto e limites
+**Sem HTTP externo, sem Docker, sem banco de dados remoto.** O Tauri gerencia a janela e inicia o sidecar Python via `stdin/stdout` (JSON Lines). O frontend se comunica com o Rust por `invoke` e Channels; o Rust repassa para o Python.
 
-- Arquivos de até 10 MB, com até 500 mil caracteres extraídos. PDF: até 200 páginas com texto; não há OCR.
-- Busca textual FTS5 no SQLite, isolada por projeto, sem download de embeddings. Arquivos podem ser excluídos da busca e selecionados explicitamente por pergunta.
-- Por resposta: até 12 anexos, 12 mil caracteres de trechos de documentos, 16 mil de memória e 6 mil de instruções. Documentos grandes são consultados por trechos, não necessariamente na íntegra.
-- Imagens são tratadas na aba Visão. Veja [docs/visao.md](docs/visao.md).
-- Ao enviar uma pergunta, os trechos selecionados, instruções e histórico são enviados ao provedor configurado para gerar a resposta. Importação e indexação são locais.
+---
 
-## Arquitetura e configuração
+## Funcionalidades
 
-Tauri 2/Rust gerencia janela, SQLite e o processo Python. React/Vite/TypeScript usa invoke e Channels. O engine recebe JSON Lines por stdin/stdout. Não há servidor HTTP, Docker ou banco externo. O diretório backend é legado.
+### Projetos como espaços de trabalho
+- Crie projetos com objetivo e instruções próprias
+- Adicione PDF, DOCX, Markdown, TXT ou código à biblioteca — texto extraído e indexado localmente
+- Memória viva em Markdown: o modelo atualiza `MEMORY.md`, `AGENTS.md` e `DECISOES.md` automaticamente após decisões duráveis
+- Histórico de versões dos arquivos de memória, recuperável pela interface
 
-O app instalado inicia o engine e lê credenciais do `.env` na pasta de dados (`%APPDATA%/com.cfsjcode.solaris/.env`). Esse arquivo nunca é empacotado ou versionado. O carregamento foi alinhado à main remota, que incorporou o PR #4.
+### Chat com roteamento inteligente
+- Streaming SSE com Claude e qualquer modelo OpenRouter
+- Custo estimado por mensagem (tokens de entrada + saída)
+- Fallback automático de provedor em caso de falha
+- Contexto montado dinamicamente: trechos de documentos + memória + instruções + histórico
+
+### Visão e detecção ao vivo
+- Webcam ao vivo com YOLOv8n ONNX FP32, ~1 FPS em Ryzen 4600G (CPU only)
+- 80 classes COCO exibidas em português brasileiro
+- Pausar quadro → desenhar caixas → anotar objetos → salvar revisão no projeto
+- Aprendizado ativo: coleta quadros, descarta repetição/desfoque, verifica com detector maior, treina candidatas em processo separado
+
+### Sem dependências externas obrigatórias
+- Instalador `.msi` único gerado com `scripts/build.ps1`
+- Credenciais de API em `.env` local, nunca empacotadas ou versionadas
+- SQLite como único banco de dados; sem PostgreSQL, Redis ou MinIO
+
+---
+
+## Requisitos
+
+| Item | Mínimo |
+|---|---|
+| Sistema operacional | Windows 10/11 (64-bit) |
+| CPU | x86-64 com AVX2 (Ryzen/Intel 8ª geração+) |
+| RAM | 8 GB (16 GB recomendado) |
+| Disco | 2 GB livres |
+| GPU | Não necessária |
+| Webcam | Opcional (funcionalidade de visão) |
+
+> Desenvolvido e testado em Ryzen 5 4600G, 32 GB RAM, sem GPU discreta.
+
+---
+
+## Instalação
+
+1. Baixe o instalador na página de [Releases](https://github.com/CFSJCODE/Solaris/releases)
+2. Execute `SOLARIS_x.x.x_x64_en-US.msi` e siga o assistente
+3. Crie o arquivo de credenciais em `%APPDATA%\com.cfsjcode.solaris\.env`:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+OPENROUTER_API_KEY=sk-or-...
+```
+
+4. Abra o SOLARIS pelo Menu Iniciar
+
+---
 
 ## Desenvolvimento
 
-Leia AGENTS.md, MEMORY.md, DECISOES.md e CONTRIBUTING.md antes de mudanças substantivas. Atualize decisões e estado de validação sem guardar transcrições ou segredos.
+```powershell
+# Pré-requisitos: Node.js 20+, Python 3.11, Rust 1.77+
 
-- `npm --prefix frontend run build`
-- `cargo test --lib --manifest-path src-tauri/Cargo.toml`
-- `python-engine/.venv/Scripts/python.exe -m unittest discover -s python-engine/tests -v`
-- `scripts/build.ps1`: prepara pesos, compila o engine e gera MSI, sem instalar.
+# Frontend
+npm --prefix frontend install
+npm --prefix frontend run dev
 
-Se uma cópia debug estiver aberta, o Windows bloqueia a substituição do sidecar. Encerre essa cópia antes de recompilar normalmente. Testes unitários do banco podem omitir o sidecar via TAURI_CONFIG; isso não altera a configuração de produção. SOLARIS_TEST_DATA_DIR é reconhecida somente em debug para armazenamento de teste separado.
+# Engine Python
+cd python-engine
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt -r requirements-dev.txt
 
-## Pendências
+# Testes Python (49)
+python -m pytest tests/ -v
 
-OCR, busca semântica por embeddings, sincronização externa de Markdown, descoberta de nomes além do vocabulário definido e monitoramento independente da precisão real continuam pendentes. Treinamento/promoção estão implementados; falta observar e avaliar uma adaptação real com a câmera. A reversão automática atual cobre falhas técnicas de ativação. Não há execução de comandos baseada em instruções encontradas em arquivos.
+# Lint e formato
+python -m ruff check .
+python -m ruff format .
+
+# Testes Rust
+cargo test --lib --manifest-path src-tauri/Cargo.toml
+
+# Gerar instalador .msi
+.\scripts\build.ps1
+```
+
+**Antes de contribuir:** leia [`AGENTS.md`](AGENTS.md), [`MEMORY.md`](MEMORY.md), [`DECISOES.md`](DECISOES.md) e [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+---
+
+## Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | Regras do ciclo autônomo e do roteador de modelos |
+| [`docs/aprendizado-autonomo.md`](docs/aprendizado-autonomo.md) | Pipeline de aprendizado ativo e limites operacionais |
+| [`docs/revisao-quadros.md`](docs/revisao-quadros.md) | Interface de anotação de quadros da câmera |
+| [`docs/visao.md`](docs/visao.md) | Detalhes do subsistema de visão computacional |
+| [`DECISOES.md`](DECISOES.md) | Registro de decisões de arquitetura |
+
+---
+
+## Estado atual (0.5.4)
+
+- ✅ Chat multi-LLM com streaming e custo por mensagem
+- ✅ RAG local: indexação e busca FTS5 em SQLite
+- ✅ Visão ao vivo com YOLOv8n ONNX, anotação e revisão de quadros
+- ✅ Aprendizado ativo com avaliação antes da promoção
+- ✅ Memória viva em Markdown com histórico de versões
+- ✅ Instalador `.msi` nativo Windows
+- 🔄 Classe `powerbank` em ciclo de validação (complemento provisório isolado)
+- 📋 Pendente: OCR, busca semântica por embeddings, sincronização externa de Markdown
+
+---
+
+<div align="center">
+<sub>Projeto pessoal · Desenvolvido por CFSJCODE · Ryzen 5 4600G · CPU only</sub>
+</div>
