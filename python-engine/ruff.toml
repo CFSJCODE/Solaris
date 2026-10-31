@@ -1,14 +1,7 @@
-# Ruff — formatter + linter para o python-engine do SOLARIS
-# Equivalente a Black + isort + Flake8 em uma única ferramenta
-
-line-length = 100
-target-version = "py311"
+# python-engine — estende o ruff.toml da raiz do repositório.
+# Regras adicionais: UP (modernização), B (bugbear), SIM (simplificações).
+extend = "../ruff.toml"
 
 [lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]  # comprimento de linha tratado pelo formatter
-
-[format]
-quote-style = "double"
-indent-style = "space"
-line-ending = "auto"
+extend-select = ["UP", "B", "SIM"]
+ignore = ["E501"]
