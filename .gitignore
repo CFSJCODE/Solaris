@@ -12,6 +12,7 @@ python-engine/.env
 
 # ── Node / Frontend ─────────────────────────────────────
 frontend/node_modules/
+node_modules/
 frontend/dist/
 frontend/test-results/
 frontend/playwright-report/

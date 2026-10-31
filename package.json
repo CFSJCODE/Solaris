@@ -1,0 +1,12 @@
+{
+  "name": "solaris-workspace",
+  "private": true,
+  "description": "Ferramentas de formatação do repositório SOLARIS (o app fica em frontend/ e src-tauri/).",
+  "scripts": {
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}

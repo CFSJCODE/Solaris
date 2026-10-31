@@ -8,5 +8,9 @@
   "trailingComma": "all",
   "bracketSpacing": true,
   "arrowParens": "always",
-  "endOfLine": "auto"
+  "endOfLine": "auto",
+  "overrides": [
+    { "files": ["*.md"], "options": { "proseWrap": "preserve", "printWidth": 100 } },
+    { "files": ["*.json", "*.jsonc"], "options": { "trailingComma": "none" } }
+  ]
 }
