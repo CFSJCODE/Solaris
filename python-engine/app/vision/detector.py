@@ -156,6 +156,7 @@ def selected_session(project_id=None, live=False):
     path = None
     labels = LABELS
     warning = None
+    version: dict = {}
     try:
         if pointer.exists():
             version = json.loads(pointer.read_text(encoding='utf-8'))

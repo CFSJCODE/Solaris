@@ -1,4 +1,6 @@
 """Real s/x weight updates and ONNX exports, isolated; never promotes test models."""
+# torch/ultralytics/transformers/psutil existem só no runtime de aprendizado separado (%APPDATA%), não no venv do engine.
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 import base64
 import json
 import os
@@ -31,7 +33,9 @@ def main():
             dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,dest)
     config={**config,'reference':str(subset),'reference_sha256':digest(images[0])}
     image=images[16]
-    frame=cv2.imread(str(image));height,width=frame.shape[:2]
+    frame=cv2.imread(str(image))
+    assert frame is not None,f'Imagem ilegível: {image}'
+    height,width=frame.shape[:2]
     from app.vision.detector import LABELS
     boxes=[]
     for row in (reference/'labels/train2017'/image.with_suffix('.txt').name).read_text().splitlines():
@@ -57,7 +61,7 @@ def main():
         exported=Path(candidate.export(format='onnx',imgsz=640,nms=False,dynamic=False,simplify=False,device='cpu',opset=17))
         options=ort.SessionOptions();options.intra_op_num_threads=1
         session=ort.InferenceSession(str(exported),sess_options=options,providers=['CPUExecutionProvider'])
-        output=session.run(None,{session.get_inputs()[0].name:np.zeros((1,3,640,640),np.float32)})[0]
+        output=np.asarray(session.run(None,{session.get_inputs()[0].name:np.zeros((1,3,640,640),np.float32)})[0])
         assert output.shape==(1,300,6) and np.isfinite(output).all()
         results.append({'model':model,'seconds':time.perf_counter()-started,'weights_changed':True,'active':False,'export_shape':list(output.shape),'report':report})
         del candidate,session

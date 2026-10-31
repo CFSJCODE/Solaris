@@ -19,6 +19,7 @@ class EnvironmentTests(unittest.TestCase):
             frame={'width':640,'height':480,'detections':[{'class_id':28,'label':'mala','confidence':.9,'x':50.,'y':60.,'width':100.,'height':80.}]}
             first=scene.observe(copy.deepcopy(frame),100)
             self.assertFalse(first['detections'][0]['stable']);track=first['detections'][0]['track_id']
+            result:dict={}
             for i in range(1,35):result=scene.observe(copy.deepcopy(frame),100+i)
             self.assertEqual(result['detections'][0]['track_id'],track)
             self.assertTrue(result['detections'][0]['stable']);self.assertIn('mala',result['environment']['recurring'])
@@ -64,6 +65,7 @@ class EnvironmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             scene=Scene(Path(directory)/'bedroom.json')
             bed={'class_id':59,'label':'cama','confidence':.9,'x':0.,'y':0.,'width':40.,'height':30.}
+            result:dict={}
             for now in range(8):
                 result=scene.observe({'width':64,'height':64,'detections':[copy.deepcopy(bed)]},100+now)
             self.assertEqual(result['environment']['context']['hypothesis'],'quarto')
@@ -78,6 +80,7 @@ class EnvironmentTests(unittest.TestCase):
                  'x':index*15.,'y':0.,'width':12.,'height':12.}
                 for index,name in enumerate(('laptop','keyboard','mouse'))
             ]
+            result:dict={}
             for now in range(8):
                 result=scene.observe({'width':64,'height':64,'detections':copy.deepcopy(boxes)},100+now)
             self.assertEqual(result['environment']['context']['hypothesis'],'escritório')

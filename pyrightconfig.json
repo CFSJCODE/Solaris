@@ -1,0 +1,12 @@
+{
+  "include": ["python-engine/app", "python-engine/tests", "scripts"],
+  "exclude": ["**/node_modules", "**/__pycache__", "**/.venv", "**/dist", "**/build", "backend", "src-tauri/target"],
+  "venvPath": "python-engine",
+  "venv": ".venv",
+  "pythonVersion": "3.14",
+  "typeCheckingMode": "standard",
+  "executionEnvironments": [
+    { "root": "python-engine", "extraPaths": ["python-engine"] },
+    { "root": "scripts", "extraPaths": ["python-engine"] }
+  ]
+}

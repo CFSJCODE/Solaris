@@ -1,4 +1,6 @@
 """Real evaluation compatibility and checkpoint-on-pause checks; no model promotion."""
+# torch/ultralytics/transformers/psutil existem só no runtime de aprendizado separado (%APPDATA%), não no venv do engine.
+# pyright: reportMissingImports=false, reportMissingModuleSource=false
 import json
 import sys
 from pathlib import Path
