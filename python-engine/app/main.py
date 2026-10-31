@@ -204,22 +204,23 @@ async def main_loop() -> None:
 
 
 if __name__ == "__main__":
-    # Load .env from the engine's directory (development) or storage dir (packaged)
+    # Load .env: app data dir (installed app), then engine dir, then dev locations
     try:
-        from dotenv import load_dotenv
         import os
-        # Derive app data dir from SOLARIS_STORAGE (set by Tauri in lib.rs)
-        # SOLARIS_STORAGE = %APPDATA%\com.cfsjcode.solaris\storage  →  parent is the app data dir
-        _storage = os.getenv("SOLARIS_STORAGE", "")
-        _appdata_env = Path(_storage).parent / ".env" if _storage else None
-
+        from dotenv import load_dotenv
+        candidates = []
+        storage = os.getenv("SOLARIS_STORAGE")
+        if storage:
+            # O Rust define SOLARIS_STORAGE = <app data>/storage; o .env fica em <app data>,
+            # pois o instalador não empacota chaves.
+            candidates.append(Path(storage).parent / ".env")
         for env_path in [
-            _appdata_env,                                        # installed app (%APPDATA%/…)
-            Path(sys.executable).parent / ".env",               # packaged sidecar dir
-            ENGINE_ROOT / ".env",                               # dev: python-engine/.env
-            ENGINE_ROOT.parent / "backend" / ".env",            # backward compat
+            *candidates,
+            Path(sys.executable).parent / ".env",
+            ENGINE_ROOT / ".env",
+            ENGINE_ROOT.parent / "backend" / ".env",  # backward compat
         ]:
-            if env_path and env_path.exists():
+            if env_path.exists():
                 load_dotenv(env_path)
                 break
     except ImportError:
