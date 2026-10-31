@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ChatPage from "./pages/ChatPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import VisionPage from "./pages/VisionPage";
 
 type View = "chat" | "projects" | "rag" | "vision";
 
@@ -87,7 +88,7 @@ export default function App() {
         {view === "chat"     && <ChatPage />}
         {view === "projects" && <ProjectsPage />}
         {view === "rag"      && <Placeholder label="Memória / RAG" />}
-        {view === "vision"   && <Placeholder label="Visão Computacional" />}
+        {view === "vision"   && <VisionPage />}
       </main>
     </div>
   );

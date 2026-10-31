@@ -55,6 +55,7 @@ pub fn run() {
             commands::create_project,
             commands::rename_project,
             commands::delete_project,
+            commands::vision_frame,
         ])
         .build(tauri::generate_context!())
         .expect("error building tauri application")
