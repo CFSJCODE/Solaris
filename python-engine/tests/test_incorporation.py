@@ -144,7 +144,7 @@ class IncorporationTests(unittest.TestCase):
             self.assertEqual(len(json.loads(row["labels"])), 1)
             self.assertIsNone(conn.execute("SELECT labels FROM samples").fetchone()[0])
             requests = conn.execute("SELECT model,state FROM training_requests").fetchall()
-            self.assertEqual({r["model"] for r in requests}, {"yolo26s", "yolo26x"})
+            self.assertEqual({r["model"] for r in requests}, {"yolo26s"})
         second = learning.incorporate(1, 42, self.payload)
         self.assertEqual(first["request_ids"], second["request_ids"])
         self.assertEqual(learning.status(2)["requests"], [])
@@ -158,7 +158,7 @@ class IncorporationTests(unittest.TestCase):
         self.assertFalse(set(first["request_ids"]) & set(second["request_ids"]))
         with learning.connect() as conn:
             self.assertEqual(
-                conn.execute("SELECT count(*) FROM training_requests").fetchone()[0], 4
+                conn.execute("SELECT count(*) FROM training_requests").fetchone()[0], 2
             )
 
     def test_pending_context_requests_are_reused_and_duplicates_coalesced(self):
@@ -183,7 +183,7 @@ class IncorporationTests(unittest.TestCase):
         second = learning.request_training(None)
         self.assertEqual(first["request_ids"], second["request_ids"])
         with learning.connect() as conn:
-            for model in ("yolo26s", "yolo26x"):
+            for model in ("yolo26s",):
                 conn.execute(
                     "INSERT INTO training_requests(id,scope,model,created,state,message,sample_id,job_id,source_hash) VALUES(?,?,?,?,?,?,?,?,?)",
                     (
@@ -202,8 +202,8 @@ class IncorporationTests(unittest.TestCase):
             states = conn.execute(
                 "SELECT model,state FROM training_requests ORDER BY model,created"
             ).fetchall()
-        self.assertEqual(sum(row["state"] == "queued" for row in states), 2)
-        self.assertEqual(sum(row["state"] == "superseded" for row in states), 2)
+        self.assertEqual(sum(row["state"] == "queued" for row in states), 1)
+        self.assertEqual(sum(row["state"] == "superseded" for row in states), 1)
 
     def test_labeled_sample_requests_are_grouped_into_one_model_cycle(self):
         with learning.connect() as conn:
@@ -224,7 +224,7 @@ class IncorporationTests(unittest.TestCase):
                         "labeled",
                     ),
                 )
-            for model in ("yolo26s", "yolo26x"):
+            for model in ("yolo26s",):
                 for index, sample_id in enumerate(("sample-a", "sample-a", "sample-b")):
                     conn.execute(
                         "INSERT INTO training_requests(id,scope,model,created,state,message,sample_id,job_id,source_hash) VALUES(?,?,?,?,?,?,?,?,?)",
@@ -244,7 +244,7 @@ class IncorporationTests(unittest.TestCase):
             rows = conn.execute(
                 "SELECT id,model,state,sample_id FROM training_requests ORDER BY model,created"
             ).fetchall()
-        for model in ("yolo26s", "yolo26x"):
+        for model in ("yolo26s",):
             pending = [row for row in rows if row["model"] == model and row["state"] == "queued"]
             grouped = [
                 row for row in rows if row["model"] == model and row["state"] == "superseded"
