@@ -157,6 +157,15 @@ async def handle_extract_text(req: dict) -> None:
     _write({"id": req["id"], "type": "extract_text_result", "text": text})
 
 
+async def handle_vision_frame(req: dict) -> None:
+    from app.vision.detector import detect_frame
+    source = req.get("source", 0)
+    conf = req.get("conf", 0.35)
+    result = detect_frame(source=source, conf=conf)
+    _write({"id": req["id"], "type": "vision_frame_result",
+            "jpeg_b64": result["jpeg_b64"], "detections": result["detections"]})
+
+
 _HANDLERS: dict[str, Any] = {
     "chat_stream":       handle_chat_stream,
     "models_list":       handle_models_list,
@@ -166,6 +175,7 @@ _HANDLERS: dict[str, Any] = {
     "rag_search":        handle_rag_search,
     "rag_delete_chunks": handle_rag_delete_chunks,
     "extract_text":      handle_extract_text,
+    "vision_frame":      handle_vision_frame,
 }
 
 

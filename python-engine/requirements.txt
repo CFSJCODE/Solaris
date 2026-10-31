@@ -6,3 +6,5 @@ tokenizers>=0.20.0
 chromadb>=0.5.23
 pdfminer.six>=20231228
 python-dotenv>=1.0.0
+ultralytics>=8.3.0
+opencv-python-headless>=4.10.0

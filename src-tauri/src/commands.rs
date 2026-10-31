@@ -248,6 +248,62 @@ pub async fn list_models(engine: State<'_, EngineState>) -> Result<Vec<Value>, S
         .unwrap_or_default())
 }
 
+// ── Vision ────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Serialize)]
+pub struct VisionFrame {
+    pub jpeg_b64: String,
+    pub detections: Vec<Detection>,
+}
+
+#[derive(Clone, Serialize)]
+pub struct Detection {
+    pub label: String,
+    pub conf: f64,
+    pub box_coords: Vec<i64>,
+}
+
+#[tauri::command]
+pub async fn vision_frame(
+    engine: State<'_, EngineState>,
+    source: Option<u32>,
+    conf: Option<f64>,
+) -> Result<VisionFrame, String> {
+    let req_id = next_id();
+    let req = json!({
+        "id": req_id,
+        "type": "vision_frame",
+        "source": source.unwrap_or(0),
+        "conf": conf.unwrap_or(0.35),
+    });
+    let (tx, rx) = std::sync::mpsc::channel::<Value>();
+    engine.send(req, move |val| { let _ = tx.send(val); })?;
+    let resp = rx.recv().map_err(|e| e.to_string())?;
+
+    if resp["type"] == "error" {
+        return Err(resp["message"].as_str().unwrap_or("Erro desconhecido").to_string());
+    }
+
+    let jpeg_b64 = resp["jpeg_b64"].as_str().unwrap_or("").to_string();
+    let detections: Vec<Detection> = resp["detections"]
+        .as_array()
+        .unwrap_or(&vec![])
+        .iter()
+        .map(|d| Detection {
+            label: d["label"].as_str().unwrap_or("").to_string(),
+            conf: d["conf"].as_f64().unwrap_or(0.0),
+            box_coords: d["box"]
+                .as_array()
+                .unwrap_or(&vec![])
+                .iter()
+                .map(|v| v.as_i64().unwrap_or(0))
+                .collect(),
+        })
+        .collect();
+
+    Ok(VisionFrame { jpeg_b64, detections })
+}
+
 // ── Documents / RAG ───────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
