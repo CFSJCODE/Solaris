@@ -1,0 +1,16 @@
+{
+  "pythonVersion": "3.11",
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["app", "tests"],
+  "exclude": ["**/__pycache__"],
+  "typeCheckingMode": "standard",
+  "reportMissingModuleSource": false,
+  "reportUnknownMemberType": false,
+  "reportUnknownArgumentType": false,
+  "reportUnknownVariableType": false,
+  "reportUnknownParameterType": false,
+  "reportMissingTypeStubs": false,
+  "reportAttributeAccessIssue": false,
+  "useLibraryCodeForTypes": true
+}

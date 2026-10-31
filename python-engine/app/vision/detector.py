@@ -99,7 +99,7 @@ def start_loading() -> None:
 
 # Função para processar a saída do modelo YOLOv8, convertendo as coordenadas e filtrando as detecções com base na confiança e nas classes
 def postprocess(output, width: int, height: int, scale: float, pad_x: int, pad_y: int, labels=None):
-    import cv2
+    import cv2  # type: ignore[import-untyped]
     np = importlib.import_module("numpy")
     labels = LABELS if labels is None else labels
 
@@ -267,7 +267,7 @@ def merge_supplemental_detections(base_detections,supplemental_detections,labels
 
 def detect(content_b64: str, project_id=None, live=False) -> dict:
     global _session
-    import cv2
+    import cv2  # type: ignore[import-untyped]
     np = importlib.import_module("numpy")
     ort = importlib.import_module("onnxruntime")
 

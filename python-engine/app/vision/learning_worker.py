@@ -247,7 +247,7 @@ def canonical_dataset_name(name,existing_names):
 
 # Função para calcular a interseção sobre união (IoU) entre duas caixas delimitadoras, retornando o valor da IoU
 def build_dataset(key,job_id,config,model='yolo26x',force=False):
-    import cv2
+    import cv2  # type: ignore[import-untyped]
     import yaml
     from app.vision.detector import LABELS_EN
     base = [n.replace('_',' ') for n in LABELS_EN]

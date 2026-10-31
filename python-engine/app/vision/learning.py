@@ -231,7 +231,7 @@ def stop_worker():
 
 # Função para verificar se o processo de aprendizado em segundo plano está em execução, retornando True se estiver ativo e False caso contrário
 def capture(project_id, content_b64, result):
-    import cv2
+    import cv2  # type: ignore[import-untyped]
     import numpy as np
     key = scope(project_id)
     now = time.time()
@@ -330,7 +330,7 @@ def request_training(project_id,sample_id=None):
 
 
 def incorporate(project_id,revision_id,payload,complete=False):
-    import cv2
+    import cv2  # type: ignore[import-untyped]
     import numpy as np
     from app.vision.detector import LABELS,LABELS_EN
     from app.vision.object_vocabulary import canonical_object_name

@@ -6,7 +6,7 @@ import os
 from importlib import import_module
 from pathlib import Path
 
-import numpy as np  # type: ignore[import-not-found]
+import numpy as np
 
 # Variáveis globais para armazenar a sessão ONNX e o tokenizador
 _session = None
