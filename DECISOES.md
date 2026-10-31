@@ -4,7 +4,7 @@
 
 ## 31/10/2026 — Nova classe humana como complemento isolado
 
-Não aprovar um detector completo quando a referência das classes existentes regredir: as avaliações da powerbank registraram quedas de 15,52 pontos no YOLO26s e 11,91 pontos no YOLO26x. Corrigir a divisão para que uma marcação nova que só apareça na sessão mais recente participe do treino. Para uma classe explicitamente marcada, permitir somente um complemento provisório quando os pesos mudarem e a caixa humana obtiver AP *in-sample* ≥0,50. O complemento fornece apenas os IDs novos e mantém o detector anterior para as classes antigas; avisar que o teste não demonstra generalização. Promoção integral mantém os limites de avaliação e exige evidência independente em sessões diversas.
+Não aprovar um detector completo quando a referência das classes existentes regredir: as avaliações da powerbank registraram quedas de 15,52 pontos no YOLO26s e 11,91 pontos no YOLO26x. Corrigir a divisão para que uma marcação nova que só apareça na sessão mais recente participe do treino. Para uma classe explicitamente marcada, permitir somente um complemento provisório quando os pesos mudarem e a caixa humana obtiver AP _in-sample_ ≥0,50. O complemento fornece apenas os IDs novos e mantém o detector anterior para as classes antigas; avisar que o teste não demonstra generalização. Promoção integral mantém os limites de avaliação e exige evidência independente em sessões diversas.
 
 ## 31/10/2026 — Recuperação da fila de aprendizado
 
@@ -60,7 +60,6 @@ A cópia debug foi aberta com armazenamento isolado e a lista de projetos foi co
 
 Instalador gerado em src-tauri/target/release/bundle/msi/Solaris_0.2.0_x64_en-US.msi. Foram aprovados 7 testes Rust e 8 Python, mais o teste de leitura de Markdown/DOCX no engine empacotado. Nenhuma API paga foi chamada. O app instalado não foi substituído; a cópia debug de validação permaneceu aberta após a interrupção do controle de interface pelo usuário. Mudanças locais sem commit/push/merge.
 
-
 ## 30/10/2026 — Pré-carregamento na inicialização e inferência somente
 
 Confirmado explicitamente pelo responsável: pré-carregar o maior detector pré-treinado instalado na inicialização da plataforma. Mantê-lo na memória para detecção ao vivo, sem treinamento ou alteração dos pesos. YOLO26x incluído e validado em CPU. Seleção por escala x/l/m/s/n, com preferência pela família mais nova no desempate; falha de carregamento não deve causar troca silenciosa para um menor.
@@ -69,17 +68,16 @@ Confirmado explicitamente pelo responsável: pré-carregar o maior detector pré
 
 As imagens do aplicativo mostraram uma resposta prometendo salvar e Markdown ainda vazios. Correção: pedidos explícitos geram somente dados de memória; o aplicativo produz o recibo após persistir. Ausência de dados válidos gera falha explícita. O recibo e os arquivos alterados são persistidos com a resposta. Versão 0.3 em empacotamento, sem uso de API paga para validação.
 
-
 ## 30/10/2026 — Adaptação antes da evolução dos pesos
 
 O responsável escolheu as duas frentes, começando pela adaptação ao ambiente, e autorizou uso local do computador e atualização do software. Implementação desta fase: associação de caixas, estabilização, estatísticas e recorrência por projeto, sem coleta contínua de imagens e sem treino de YOLO. A fase de pesos exige avaliação e reversão e continua pendente. Todas as classes devem ser exibidas em pt-BR. Foram aprovados 9 testes Rust e 13 Python antes do empacotamento 0.3.1.
-
 
 ## 30/10/2026 — Instalação e validação 0.3.1
 
 Instalador de 299,69 MiB gerado e instalado com sucesso. Hash do engine instalado corresponde ao validado. Preservação do banco e dos arquivos Markdown conferida após a migração. Inicialização mostra YOLO26x carregado; fluxo ao vivo mediu ~0,9 análise/s. Feed da câmera mostrou um ícone de telefone bloqueado/desconectado; a validação de objetos e português foi feita também com imagem pública no engine empacotado. Após o teste, a câmera foi desligada e o app reaberto normalmente. A camada adaptativa aprende estatísticas de classes/caixas, não pesos de YOLO; treinamento dos pesos ainda é fase posterior.
 
 O compilador Rust relatou falta de memória com o perfil anterior. A configuração Windows passou a gerar apenas rlib, com otimização 1 no crate da janela e um job de build. Inferência ONNX e pesos YOLO26x não foram reduzidos. O engine foi reconstruído em pasta de build separada após falha do empacotador.
+
 ## 30/10/2026 — Aprendizado autônomo com YOLO26x
 
 Autorização explícita: implementar as tecnologias propostas sem seleção ou aprovação humana obrigatória durante o uso. Treinar sempre YOLO26x; permitir detector ao vivo menor. Usar processo CPU separado para dependências pesadas, preservar modelo original e versão anterior, avaliar antes de ativar. Coleta local limitada e transparente. OWLv2 investiga vocabulário adicional definido; não alegar descoberta semântica irrestrita. A avaliação local de rótulos automáticos é uma medida substituta. Reversão inicial cobre falhas de ativação, sem alegação de monitoramento independente da precisão real.

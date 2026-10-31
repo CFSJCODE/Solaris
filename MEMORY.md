@@ -6,7 +6,7 @@
 
 A imagem de estado da interface revelou recusas repetidas por regressão real no mAP de referência, não somente limiar apertado. Na YOLO26s, o AP local 0,6965 era da classe 80 (`Powerbank`), mas o dataset tinha zero caixas dessa classe no treino e uma na validação; a candidata previu essa única imagem reservada sem ter treinado a classe. YOLO26x teve AP local 0,00. A revisão humana estava persistida, mas o particionamento cronológico isolou sua única sessão em validação.
 
-Código corrigido para canonicalizar alias e manter a única marcação humana de uma classe nova no treino. Se a candidata obtiver AP *in-sample* ≥0,50 nessa marcação e seus pesos mudarem, o modo provisório disponibiliza só as classes novas num ONNX complementar; inferências das classes existentes continuam vindo do detector-base. A versão global continua sujeita à avaliação original. O AP provisório é teste de funcionamento, não evidência de generalização, e a interface exibe esse limite. Testes focados passaram; ainda não foi empacotado/instalado nem executado um novo treino para comprovar o reconhecimento.
+Código corrigido para canonicalizar alias e manter a única marcação humana de uma classe nova no treino. Se a candidata obtiver AP _in-sample_ ≥0,50 nessa marcação e seus pesos mudarem, o modo provisório disponibiliza só as classes novas num ONNX complementar; inferências das classes existentes continuam vindo do detector-base. A versão global continua sujeita à avaliação original. O AP provisório é teste de funcionamento, não evidência de generalização, e a interface exibe esse limite. Testes focados passaram; ainda não foi empacotado/instalado nem executado um novo treino para comprovar o reconhecimento.
 
 ## 31/10/2026 — Atualização 0.5.3 instalada
 
@@ -56,7 +56,6 @@ Atualizado em 30/10/2026. Fonte: decisões explícitas do responsável neste cha
 
 Validação corrente: 7 testes Rust e 8 testes Python passaram; o teste de protocolo de chat usa provedor simulado, sem custo. A lista de projetos foi conferida na janela nativa em armazenamento isolado. O responsável interrompeu o controle de interface com Escape; não continuar automação de UI neste turno. Instalador 0.2.0 gerado com sucesso (126,52 MiB). Engine empacotado validado com leitura de Markdown, DOCX e rejeição de arquivo inválido, sem .env no pacote. Não instalado; sem commit, push ou merge.
 
-
 ## Atualização confirmada — 30/10/2026
 
 O responsável determinou que o maior detector pré-treinado instalado seja pré-carregado ao inicializar a plataforma, antes de abrir a aba Visão, permanecendo residente até fechar o app. O modelo incluído nesta entrega passa a ser YOLO26x. Uso exclusivamente para inferência ao vivo; não treinar, ajustar pesos ou atualizar modelo automaticamente. A escolha anterior de YOLOv8n como padrão foi superada; CPU e ausência de GPU continuam válidas.
@@ -65,8 +64,6 @@ Teste local do YOLO26x em CPU, entrada 640: carregamento + aquecimento 1,924 s; 
 
 Correção em desenvolvimento: pedidos explícitos de salvar memória exigem metadados válidos; a confirmação de sucesso deve vir da escrita efetiva no armazenamento, persistir na conversa e distinguir falha de gravação. Não interpretar texto “vou salvar” como confirmação.
 
-
 Revisão posterior no mesmo dia: o responsável autorizou também evolução automática dos pesos, escolhendo começar pela adaptação do ambiente. A entrega atual implementa apenas a primeira fase: rastreamento temporal, estatísticas locais e contexto por projeto. Treino autônomo dos pesos permanece pendente; não alegar que ocorreu. Exibir interface e 80 classes em português brasileiro. Autorização para usar o computador e atualizar o software foi dada; respeitar confirmações do Windows e preservar dados.
-
 
 Entrega 0.3.1 instalada em 30/10/2026: programa e engine conferidos; banco íntegro, registros e Markdown anteriores preservados. Backup antes da instalação em AppData/com.cfsjcode.solaris/backups. 22 testes aprovados (9 Rust, 13 Python). Engine empacotado validado com pré-carregamento independente da aba Visão, inferência YOLO26x, rótulos pt-BR e perfil adaptativo persistido em área de teste. Instalação real mostrou YOLO26x Carregado e detecção contínua ~0,9/s, ~1,08 s por quadro. A fonte da câmera exibiu telefone bloqueado/desconectado; não inferir que o feed real estava disponível. Câmera desligada após o teste; aplicativo reaberto com pré-carregamento normal. Treino autônomo dos pesos permanece pendente; nenhuma API paga, commit ou push foi executado.

@@ -53,22 +53,22 @@ runtime de aprendizado — PyTorch CPU, Ultralytics, OWLv2, avaliação/exporta�
 
 ### Mapa de código
 
-| Local | Responsabilidade |
-|---|---|
-| frontend/src/pages/ProjectsPage.tsx e ProjectWorkspace.tsx | Projetos, arquivos e contexto |
-| frontend/src/pages/ChatPage.tsx e hooks/useChat.ts | Conversas, streaming, fontes e recibos |
-| frontend/src/pages/VisionPage.tsx | Câmera, detecção e revisão gráfica |
-| frontend/src/components/ | Painéis e utilitários; LearningPanel controla aprendizado |
-| src-tauri/src/db.rs, commands.rs, lib.rs | Persistência, comandos e registro IPC |
-| src-tauri/src/engine.rs | Ciclo de vida do engine e pipes |
-| src-tauri/src/knowledge.rs e project_memory.rs | Documentos/contexto e memória Markdown |
-| python-engine/app/main.py | Despacho do protocolo JSONL |
-| python-engine/app/chat/memory_stream.py | Memória e respostas estruturadas |
-| python-engine/app/vision/detector.py e environment.py | Inferência e estatísticas do ambiente |
-| python-engine/app/vision/learning.py | Coleta, revisão incorporada, fila e estado |
-| python-engine/app/vision/learning_worker.py | Verificação, dataset, treino, avaliação e promoção |
-| python-engine/app/vision/learning_retention.py | Retenção e proteção de artefatos |
-| scripts/ | Preparação de modelos/runtime, testes de integração e build |
+| Local                                                      | Responsabilidade                                            |
+| ---------------------------------------------------------- | ----------------------------------------------------------- |
+| frontend/src/pages/ProjectsPage.tsx e ProjectWorkspace.tsx | Projetos, arquivos e contexto                               |
+| frontend/src/pages/ChatPage.tsx e hooks/useChat.ts         | Conversas, streaming, fontes e recibos                      |
+| frontend/src/pages/VisionPage.tsx                          | Câmera, detecção e revisão gráfica                          |
+| frontend/src/components/                                   | Painéis e utilitários; LearningPanel controla aprendizado   |
+| src-tauri/src/db.rs, commands.rs, lib.rs                   | Persistência, comandos e registro IPC                       |
+| src-tauri/src/engine.rs                                    | Ciclo de vida do engine e pipes                             |
+| src-tauri/src/knowledge.rs e project_memory.rs             | Documentos/contexto e memória Markdown                      |
+| python-engine/app/main.py                                  | Despacho do protocolo JSONL                                 |
+| python-engine/app/chat/memory_stream.py                    | Memória e respostas estruturadas                            |
+| python-engine/app/vision/detector.py e environment.py      | Inferência e estatísticas do ambiente                       |
+| python-engine/app/vision/learning.py                       | Coleta, revisão incorporada, fila e estado                  |
+| python-engine/app/vision/learning_worker.py                | Verificação, dataset, treino, avaliação e promoção          |
+| python-engine/app/vision/learning_retention.py             | Retenção e proteção de artefatos                            |
+| scripts/                                                   | Preparação de modelos/runtime, testes de integração e build |
 
 ## 4. Armazenamento e privacidade
 
@@ -86,7 +86,7 @@ runtime de aprendizado — PyTorch CPU, Ultralytics, OWLv2, avaliação/exporta�
 3. Autorrótulos são hipóteses. Concordância entre modelos ou quadros pode repetir o mesmo erro. Não usar aumento de confiança como demonstração de verdade.
 4. Quadros vizinhos não são validação independente. Separar por sessão/tempo/cena e evitar duplicatas e vazamento entre treino, validação e teste.
 5. Uma caixa corrigida não significa que todos os objetos do quadro foram anotados. Anotação parcial não pode converter objetos omitidos em negativos. Confirmação de quadro completo deve ser explícita.
-6. Uma marcação pode iniciar candidata, mas não comprova generalização nem autoriza remover critérios de promoção integral. Um complemento provisório pode expor somente classes novas ensinadas por marcação humana, mantendo o detector original para as demais classes e exibindo o limite *in-sample*. Classes novas ainda precisam de diversidade, catálogo compatível e avaliação independente antes de substituir o modelo-base.
+6. Uma marcação pode iniciar candidata, mas não comprova generalização nem autoriza remover critérios de promoção integral. Um complemento provisório pode expor somente classes novas ensinadas por marcação humana, mantendo o detector original para as demais classes e exibindo o limite _in-sample_. Classes novas ainda precisam de diversidade, catálogo compatível e avaliação independente antes de substituir o modelo-base.
 7. Manter referência das classes antigas para evitar esquecimento catastrófico. Preservar IDs, catálogo, hash, configuração, origem dos rótulos, pesos antes/depois e resultados de avaliação.
 8. Usar orçamento de CPU/RAM/disco e pausas cooperativas. Treinar x em CPU não é atualização de toda a rede por quadro em tempo real. O painel deve explicar filas, pausas e modelo realmente ativo.
 9. Contexto semântico não deve fabricar caixas, renomear arbitrariamente objetos ou inflar confiança. Manter evidência visual e hipótese contextual separadas; permitir desconhecido e mudança de ambiente.
@@ -94,19 +94,19 @@ runtime de aprendizado — PyTorch CPU, Ultralytics, OWLv2, avaliação/exporta�
 
 ## 6. Histórico consolidado e validação
 
-| Marco | Resultado e limite |
-|---|---|
-| Fundação e chat | Tauri/React, AMR, streaming, fallback, custos; catálogo de provedores é volátil |
-| Migração 3649592 | Pipes JSONL; Rust centraliza SQLite e Channels |
-| PR #1 / #2 | UTF-8 e Markdown integrados; PR #3 duplicado fechado |
-| Instalador inicial | 0.1.0 gerado; correção do carregador .env posteriormente incorporada |
-| PR #5 | Projetos/FTS5; bugs de coluna e backfill corrigidos em e528594; sanitização em 1d9871d |
-| 0.2.0 | Pacote de projetos/contexto gerado; não confundir com instalação final |
-| 0.3.1 | Instalada, x pré-carregado, memória com recibos e adaptação estatística |
-| 0.4.0 | Instalada; runtime separado e ciclo candidato de aprendizado x, sem melhora real demonstrada |
-| 0.4.1 | Instalada; pausa/revisão gráfica, rótulos humanos opcionais |
-| 31/10: PR #5 | Conflito main.py resolvido e enviado em 47bbad19588a07702ad12d14890422be67c67363; consultado como MERGEABLE/CLEAN; PR não mergeado |
-| 0.5.0 | Instalada; incorporação/treinar agora, fila s+x, contexto heurístico e proteção de avaliação; sem melhora real de precisão comprovada |
+| Marco              | Resultado e limite                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Fundação e chat    | Tauri/React, AMR, streaming, fallback, custos; catálogo de provedores é volátil                                                       |
+| Migração 3649592   | Pipes JSONL; Rust centraliza SQLite e Channels                                                                                        |
+| PR #1 / #2         | UTF-8 e Markdown integrados; PR #3 duplicado fechado                                                                                  |
+| Instalador inicial | 0.1.0 gerado; correção do carregador .env posteriormente incorporada                                                                  |
+| PR #5              | Projetos/FTS5; bugs de coluna e backfill corrigidos em e528594; sanitização em 1d9871d                                                |
+| 0.2.0              | Pacote de projetos/contexto gerado; não confundir com instalação final                                                                |
+| 0.3.1              | Instalada, x pré-carregado, memória com recibos e adaptação estatística                                                               |
+| 0.4.0              | Instalada; runtime separado e ciclo candidato de aprendizado x, sem melhora real demonstrada                                          |
+| 0.4.1              | Instalada; pausa/revisão gráfica, rótulos humanos opcionais                                                                           |
+| 31/10: PR #5       | Conflito main.py resolvido e enviado em 47bbad19588a07702ad12d14890422be67c67363; consultado como MERGEABLE/CLEAN; PR não mergeado    |
+| 0.5.0              | Instalada; incorporação/treinar agora, fila s+x, contexto heurístico e proteção de avaliação; sem melhora real de precisão comprovada |
 
 - Base histórica de testes anterior à extensão: 23 testes Python e 9 Rust aprovados. Revisão gráfica: 5 testes de geometria e 3 testes de UI com IPC/câmera simulados. Houve também teste nativo de câmera, pausa, desenho e nome; a marcação de teste não foi salva.
 - Medições históricas: n ~42–45 ms e s ~136–155 ms em ensaio sintético; câmera nativa com s ~2,9 análises/s e ~233–300 ms de pipeline. x na câmera anterior ~0,9/s e ~1,08 s/quadro. Não extrapolar para novas condições.

@@ -8,17 +8,17 @@ Análise documental de 31/10/2026. Objetivo: aproveitar matemática e visão com
 
 Pasta original: `E:/Acadêmico/Cursos E Extensão Curricular/A MATEMÁTICA POR TRÁS DO MACHINE LEARNING/`. Originais preservados. Referências de páginas abaixo usam **página do PDF, começando em 1**, salvo indicação expressa de página impressa.
 
-| Material fornecido | Exame realizado e limite |
-|---|---|
-| aula-1-slides.pdf | 44 páginas em imagem; OCR local de todas as páginas, com inspeção visual seletiva |
-| aula-2-slides.pdf | 36 páginas em imagem; OCR local de todas; exemplo da perda da p.13 conferido visualmente |
-| aula-3-slides.pdf | 23 páginas em imagem; OCR local de todas; diagramas não são interpretáveis apenas pelo texto OCR |
-| MATHEMATICS FOR MACHINE LEARNING.pdf | 417 páginas; extração textual e consulta direcionada aos capítulos pertinentes; Deisenroth, Faisal e Ong, cópia com indicação draft 2024-01-15 |
-| Why Machines Learn PDF.pdf | 151 páginas; extração textual e seções pertinentes; **resumo Bookey**, identificado na p.2, não o livro integral de Anil Ananthaswamy |
-| NotaAula01_Matematica_Machine_Learning_Expandida.md | Nota expandida: conteúdo da aula e complementos didáticos precisam ser distinguidos |
-| NotaAula01MatematicaML_Transcricao.txt | Notas organizadas a partir de quatro páginas manuscritas; não transcrição integral da aula |
-| NotaAula02_Matematica_Machine_Learning_Expandida.md | Nota expandida baseada também em legendas automáticas; complementos não são automaticamente falas do professor |
-| visao-computacional-main.zip | Inventário de 116 entradas; leitura estática das células-fonte de 20 notebooks e textos pequenos .py/.md/.toml; saídas, modelos e vídeos não executados; ZIP interno apenas inventariado |
+| Material fornecido                                  | Exame realizado e limite                                                                                                                                                                 |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| aula-1-slides.pdf                                   | 44 páginas em imagem; OCR local de todas as páginas, com inspeção visual seletiva                                                                                                        |
+| aula-2-slides.pdf                                   | 36 páginas em imagem; OCR local de todas; exemplo da perda da p.13 conferido visualmente                                                                                                 |
+| aula-3-slides.pdf                                   | 23 páginas em imagem; OCR local de todas; diagramas não são interpretáveis apenas pelo texto OCR                                                                                         |
+| MATHEMATICS FOR MACHINE LEARNING.pdf                | 417 páginas; extração textual e consulta direcionada aos capítulos pertinentes; Deisenroth, Faisal e Ong, cópia com indicação draft 2024-01-15                                           |
+| Why Machines Learn PDF.pdf                          | 151 páginas; extração textual e seções pertinentes; **resumo Bookey**, identificado na p.2, não o livro integral de Anil Ananthaswamy                                                    |
+| NotaAula01_Matematica_Machine_Learning_Expandida.md | Nota expandida: conteúdo da aula e complementos didáticos precisam ser distinguidos                                                                                                      |
+| NotaAula01MatematicaML_Transcricao.txt              | Notas organizadas a partir de quatro páginas manuscritas; não transcrição integral da aula                                                                                               |
+| NotaAula02_Matematica_Machine_Learning_Expandida.md | Nota expandida baseada também em legendas automáticas; complementos não são automaticamente falas do professor                                                                           |
+| visao-computacional-main.zip                        | Inventário de 116 entradas; leitura estática das células-fonte de 20 notebooks e textos pequenos .py/.md/.toml; saídas, modelos e vídeos não executados; ZIP interno apenas inventariado |
 
 Cache local ignorado pelo Git em storage/document-analysis: inventory.json, textos extraídos, OCR por página, zip-text.json e imagens selecionadas. Ferramentas documentais foram instaladas somente em storage/document-tools; não são dependências do produto. Não redistribuir livros, cache integral ou imagens das aulas no repositório. OCR pode errar símbolos e fórmulas; consultar a página original em caso de dúvida. A análise foi dirigida ao SOLARIS, não revisão matemática integral das 417 páginas do livro.
 
@@ -31,20 +31,20 @@ Cache local ignorado pelo Git em storage/document-analysis: inventory.json, text
 
 ## Conceitos extraídos e aplicação proposta
 
-| Conceito e fonte | Aplicação pertinente ao SOLARIS | Limite / estado |
-|---|---|---|
-| Representação vetorial, features e parâmetros — aula 1 p.8, 14, 30–41 | Manter contratos de tensores, normalização, dimensões e catálogo entre PyTorch e ONNX; registrar configuração junto ao hash | Rede convolucional não equivale à regra linear dos exemplos didáticos; contratos já existem, ampliar testes |
-| Treino versus inferência — aula 1 p.34 | Separar serviço ONNX ativo do processo que altera candidata PyTorch | Arquitetura já adotada; extensão s+x incompleta |
-| Gradiente e regra da cadeia — aula 2 p.5–16; MML §5.2, §5.6, §7.1 | Usar autograd/otimizador existentes, congelamento parcial e taxa pequena; registrar pesos antes/depois | Não escrever backprop manual nem supor que uma época generaliza |
-| Risco empírico e generalização — aula 1 p.13, 39; aula 2 p.17; MML §8.2 | Separar sessões/tempo/cenas; comparar candidata e ativa no mesmo conjunto e preservar teste independente | Prioridade imediata; sessões consecutivas podem vazar contexto |
-| Bayes e taxas-base — aula 2 p.18–36; MML §6.3–6.4 | Contexto quarto/sala como prior limitado; combinar com evidência visual e possibilidade desconhecida | Proposta, não implementada como semântica de ambiente |
-| MLE, MAP e regularização — aula 2 p.34–35; MML §8.3–8.4 | Restringir deriva, usar referência das classes antigas e treino gradual | MAP = máximo a posteriori; mAP = média da precisão média, outro conceito |
-| Convolução e campos receptivos — aula 3 p.6–7, 19–23 | Melhorar pré-processamento, preservar geometria/letterbox e mapear caixas para o quadro original | Filtro de borda não substitui detector e não ensina nome de classe |
-| Qualidade visual, HSV, histogramas, morfologia — notebooks do ZIP | Rejeitar desfoque/exposição ruim e reduzir exemplos repetidos; diagnosticar iluminação | Proposta complementar; equalização agressiva pode distorcer distribuição do modelo |
-| Rastreamento e consistência temporal — projeto de contagem/DeepSORT do ZIP | Reunir vistas do mesmo objeto e diversidade temporal; comparar com ByteTrack atual | Rastreador não certifica o nome; DeepSORT adiciona custo de reidentificação |
-| PCA e modelos de mistura — MML caps.10–11 | Opcional: compactar descritores e explorar agrupamentos para selecionar amostras diversas | Não nomeia classe nova sozinho; adiar até haver descritores/dados e comparação |
-| Árvores/Naive Bayes — notas expandidas e aula 2 | Baseline leve sobre estatísticas de cena, se existir conjunto rotulado confiável | Dependência entre features pode duplicar evidência; não substituir YOLO sem avaliação |
-| Incerteza, calibração e mudança de domínio — complementos das notas; MML model selection | Mostrar desconhecido, medir calibração em dados adequados e detectar mudança de ambiente | Proposta; score 0,95 não garante 95% de acerto |
+| Conceito e fonte                                                                         | Aplicação pertinente ao SOLARIS                                                                                             | Limite / estado                                                                                             |
+| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Representação vetorial, features e parâmetros — aula 1 p.8, 14, 30–41                    | Manter contratos de tensores, normalização, dimensões e catálogo entre PyTorch e ONNX; registrar configuração junto ao hash | Rede convolucional não equivale à regra linear dos exemplos didáticos; contratos já existem, ampliar testes |
+| Treino versus inferência — aula 1 p.34                                                   | Separar serviço ONNX ativo do processo que altera candidata PyTorch                                                         | Arquitetura já adotada; extensão s+x incompleta                                                             |
+| Gradiente e regra da cadeia — aula 2 p.5–16; MML §5.2, §5.6, §7.1                        | Usar autograd/otimizador existentes, congelamento parcial e taxa pequena; registrar pesos antes/depois                      | Não escrever backprop manual nem supor que uma época generaliza                                             |
+| Risco empírico e generalização — aula 1 p.13, 39; aula 2 p.17; MML §8.2                  | Separar sessões/tempo/cenas; comparar candidata e ativa no mesmo conjunto e preservar teste independente                    | Prioridade imediata; sessões consecutivas podem vazar contexto                                              |
+| Bayes e taxas-base — aula 2 p.18–36; MML §6.3–6.4                                        | Contexto quarto/sala como prior limitado; combinar com evidência visual e possibilidade desconhecida                        | Proposta, não implementada como semântica de ambiente                                                       |
+| MLE, MAP e regularização — aula 2 p.34–35; MML §8.3–8.4                                  | Restringir deriva, usar referência das classes antigas e treino gradual                                                     | MAP = máximo a posteriori; mAP = média da precisão média, outro conceito                                    |
+| Convolução e campos receptivos — aula 3 p.6–7, 19–23                                     | Melhorar pré-processamento, preservar geometria/letterbox e mapear caixas para o quadro original                            | Filtro de borda não substitui detector e não ensina nome de classe                                          |
+| Qualidade visual, HSV, histogramas, morfologia — notebooks do ZIP                        | Rejeitar desfoque/exposição ruim e reduzir exemplos repetidos; diagnosticar iluminação                                      | Proposta complementar; equalização agressiva pode distorcer distribuição do modelo                          |
+| Rastreamento e consistência temporal — projeto de contagem/DeepSORT do ZIP               | Reunir vistas do mesmo objeto e diversidade temporal; comparar com ByteTrack atual                                          | Rastreador não certifica o nome; DeepSORT adiciona custo de reidentificação                                 |
+| PCA e modelos de mistura — MML caps.10–11                                                | Opcional: compactar descritores e explorar agrupamentos para selecionar amostras diversas                                   | Não nomeia classe nova sozinho; adiar até haver descritores/dados e comparação                              |
+| Árvores/Naive Bayes — notas expandidas e aula 2                                          | Baseline leve sobre estatísticas de cena, se existir conjunto rotulado confiável                                            | Dependência entre features pode duplicar evidência; não substituir YOLO sem avaliação                       |
+| Incerteza, calibração e mudança de domínio — complementos das notas; MML model selection | Mostrar desconhecido, medir calibração em dados adequados e detectar mudança de ambiente                                    | Proposta; score 0,95 não garante 95% de acerto                                                              |
 
 ### Referências direcionadas do livro MML
 

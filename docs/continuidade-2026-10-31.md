@@ -10,17 +10,17 @@ Instalada: **0.4.1**. Em desenvolvimento local: incorporação de revisões, fil
 
 ## Alterações locais iniciadas — revisar antes de prosseguir
 
-| Arquivo | Trabalho iniciado | Validação que falta |
-|---|---|---|
-| python-engine/app/vision/learning.py | Tabelas human_reviews, training_requests, live_context; incorporação de revisão, pedidos s/x, latência média e sessões temporais | Migração em banco existente, quotas, duplicação/idempotência, concorrência e isolamento por projeto |
-| python-engine/app/vision/learning_worker.py | Mescla de marcação humana com verificação, prioridade de pedidos, datasets por modelo, treino s/x, progresso/loss, hashes de pesos e critérios de promoção | Testes integrados, pausas, cancelamento, ambos os modelos, regressões, datasets parciais e retenção |
-| python-engine/app/vision/detector.py | Preferência pela candidata s aprovada no vídeo; x para análise estática; identificação do modelo adaptado | Carregamento, troca, incompatibilidade e reversão no engine real |
-| python-engine/app/vision/learning_retention.py | Reconhecimento dos ponteiros ativos s | Proteção de ativo/anterior e limpeza de metadados órfãos |
-| python-engine/app/main.py | Mensagens learning_incorporate e learning_train_now | Protocolo do executável real e erros propagados à UI |
-| src-tauri/src/db.rs | Recuperação de revisão persistida com escopo de projeto | Integridade, acesso cruzado e exclusão |
-| src-tauri/src/commands.rs e lib.rs | Comandos de incorporação/treino e registro | Compilação e testes Rust após estas mudanças |
-| frontend/src/pages/VisionPage.tsx | Confirmação de quadro completo e botão de incorporar após salvar; recibos separados | Testes de falha parcial, revisão humana, classes vazias e estado da câmera |
-| frontend/src/components/LearningPanel.tsx | Treinar contexto agora, fila s/x, progresso e métricas antes/depois | UI simulada e nativa com estados reais |
+| Arquivo                                        | Trabalho iniciado                                                                                                                                          | Validação que falta                                                                                 |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| python-engine/app/vision/learning.py           | Tabelas human_reviews, training_requests, live_context; incorporação de revisão, pedidos s/x, latência média e sessões temporais                           | Migração em banco existente, quotas, duplicação/idempotência, concorrência e isolamento por projeto |
+| python-engine/app/vision/learning_worker.py    | Mescla de marcação humana com verificação, prioridade de pedidos, datasets por modelo, treino s/x, progresso/loss, hashes de pesos e critérios de promoção | Testes integrados, pausas, cancelamento, ambos os modelos, regressões, datasets parciais e retenção |
+| python-engine/app/vision/detector.py           | Preferência pela candidata s aprovada no vídeo; x para análise estática; identificação do modelo adaptado                                                  | Carregamento, troca, incompatibilidade e reversão no engine real                                    |
+| python-engine/app/vision/learning_retention.py | Reconhecimento dos ponteiros ativos s                                                                                                                      | Proteção de ativo/anterior e limpeza de metadados órfãos                                            |
+| python-engine/app/main.py                      | Mensagens learning_incorporate e learning_train_now                                                                                                        | Protocolo do executável real e erros propagados à UI                                                |
+| src-tauri/src/db.rs                            | Recuperação de revisão persistida com escopo de projeto                                                                                                    | Integridade, acesso cruzado e exclusão                                                              |
+| src-tauri/src/commands.rs e lib.rs             | Comandos de incorporação/treino e registro                                                                                                                 | Compilação e testes Rust após estas mudanças                                                        |
+| frontend/src/pages/VisionPage.tsx              | Confirmação de quadro completo e botão de incorporar após salvar; recibos separados                                                                        | Testes de falha parcial, revisão humana, classes vazias e estado da câmera                          |
+| frontend/src/components/LearningPanel.tsx      | Treinar contexto agora, fila s/x, progresso e métricas antes/depois                                                                                        | UI simulada e nativa com estados reais                                                              |
 
 O frontend compilou e os módulos Python foram verificados quanto à sintaxe/compatibilidade durante o trabalho. Isso não substitui a bateria completa após as últimas alterações. Os testes anteriores a esta extensão não certificam o novo fluxo.
 

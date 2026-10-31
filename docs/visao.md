@@ -35,7 +35,6 @@ As revisões são insumos para trabalho futuro; salvar não inicia treino nem pr
 
 No teste local com a imagem pública `ultralytics/assets/bus.jpg`, a inferência 320 px retornou ônibus e três pessoas. Três execuções mediram 20,0 / 11,6 / 11,4 ms, excluindo carregamento inicial, leitura e IPC. É um teste funcional, não benchmark de câmera ou avaliação de qualidade.
 
-
 ## Atualização 0.3.1 — YOLO26x e câmera contínua
 
 Por decisão do responsável, o maior modelo instalado é pré-carregado na inicialização e fica residente. YOLO26x incluído, origem dos pesos Ultralytics e exportação [prithivMLmods/YOLO26-ONNX](https://huggingface.co/prithivMLmods/YOLO26-ONNX), revisão c526dae7a5a5b4f1d79d704903b4406011da2716, arquivo yolo26x/yolo26x.onnx. SHA-256 a879d5b533db9291eeb8ba332f1ef2b7a8f3a10003f35baa1dbdf3be872a3e6f. Tamanho 223.287.525 bytes, entrada [1,3,640,640], saída end-to-end [1,300,6]. Termos dos modelos continuam vinculados à origem Ultralytics.
