@@ -51,6 +51,10 @@ pub fn run() {
             commands::upload_document,
             commands::list_documents,
             commands::delete_document,
+            commands::list_projects,
+            commands::create_project,
+            commands::rename_project,
+            commands::delete_project,
         ])
         .build(tauri::generate_context!())
         .expect("error building tauri application")

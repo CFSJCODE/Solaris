@@ -27,6 +27,15 @@ pub struct Message {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Project {
+    pub id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Document {
     pub id: i64,
     pub project_id: Option<i64>,
@@ -47,6 +56,14 @@ pub fn open(storage_dir: &std::path::Path) -> Result<Connection> {
 
 fn migrate(conn: &Connection) -> Result<()> {
     conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS projects (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT    NOT NULL,
+            description TEXT,
+            created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+            updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+        );
+
         CREATE TABLE IF NOT EXISTS conversations (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             title      TEXT    NOT NULL DEFAULT 'Nova conversa',
@@ -66,6 +83,26 @@ fn migrate(conn: &Connection) -> Result<()> {
             created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
         );
 
+        CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+            content,
+            conversation_id UNINDEXED,
+            content='messages',
+            content_rowid='id'
+        );
+
+        CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
+            INSERT INTO messages_fts(rowid, content, conversation_id)
+            VALUES (new.id, new.content, new.conversation_id);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
+            INSERT INTO messages_fts(messages_fts, rowid, content, conversation_id)
+            VALUES ('delete', old.id, old.content, old.conversation_id);
+        END;
+
+        INSERT OR IGNORE INTO messages_fts(rowid, content, conversation_id)
+            SELECT id, content, conversation_id FROM messages;
+
         CREATE TABLE IF NOT EXISTS documents (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             project_id  INTEGER,
@@ -78,9 +115,75 @@ fn migrate(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-// ── Conversation helpers ───────────────────────────────────────────────────
+// ── Project helpers ────────────────────────────────────────────────────────
 
 impl DbState {
+    pub fn list_projects(&self) -> Result<Vec<Project>> {
+        let conn = self.0.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, name, description, created_at, updated_at FROM projects ORDER BY name",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Project {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                description: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    pub fn create_project(&self, name: &str, description: Option<&str>) -> Result<i64> {
+        let conn = self.0.lock().unwrap();
+        conn.execute(
+            "INSERT INTO projects (name, description) VALUES (?1, ?2)",
+            params![name, description],
+        )?;
+        Ok(conn.last_insert_rowid())
+    }
+
+    pub fn rename_project(&self, id: i64, name: &str, description: Option<&str>) -> Result<()> {
+        let conn = self.0.lock().unwrap();
+        conn.execute(
+            "UPDATE projects SET name=?1, description=?2, updated_at=datetime('now') WHERE id=?3",
+            params![name, description, id],
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_project(&self, id: i64) -> Result<()> {
+        let conn = self.0.lock().unwrap();
+        // Null out project_id on conversations before deleting project
+        conn.execute("UPDATE conversations SET project_id=NULL WHERE project_id=?1", params![id])?;
+        conn.execute("DELETE FROM projects WHERE id=?1", params![id])?;
+        Ok(())
+    }
+
+    /// Full-text search across all messages excluding the current conversation.
+    /// Returns up to `limit` content snippets from past conversations.
+    pub fn fts_search(&self, query: &str, exclude_conv_id: i64, limit: usize) -> Result<Vec<String>> {
+        if query.trim().is_empty() {
+            return Ok(vec![]);
+        }
+        let conn = self.0.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT content FROM messages_fts
+             WHERE messages_fts MATCH ?1
+             AND conversation_id != ?2
+             ORDER BY rank
+             LIMIT ?3",
+        )?;
+        let rows = stmt.query_map(
+            params![query, exclude_conv_id, limit as i64],
+            |row| row.get::<_, String>(0),
+        )?;
+        rows.collect()
+    }
+
+// ── Conversation helpers ───────────────────────────────────────────────────
+
     pub fn list_conversations(&self) -> Result<Vec<Conversation>> {
         let conn = self.0.lock().unwrap();
         let mut stmt = conn.prepare(
