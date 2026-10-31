@@ -199,11 +199,23 @@ export default function App() {
         )}
         {view === "rag" && (
           <section className="sol-page sol-stack">
-            <h1>Memória · {activeProject?.name ?? "Sem projeto"}</h1>
+            <h1>Memória · {activeProject?.name ?? "Geral"}</h1>
             <p>
               A busca textual recupera até três trechos de outras conversas do projeto ativo.
-              Conversas sem projeto compartilham apenas o contexto sem projeto.
+              Conversas sem projeto compartilham apenas o contexto geral.
             </p>
+            {!projectId && projects.length > 0 && (
+              <div className="sol-project-hint">
+                <span>Selecione um projeto para ver sua memória específica:</span>
+                <div className="sol-project-hint-list">
+                  {projects.map((p) => (
+                    <button key={p.id} className="btn-ghost" onClick={() => setProjectId(p.id)}>
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <label>
               <input
                 type="checkbox"
