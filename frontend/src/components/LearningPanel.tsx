@@ -14,7 +14,9 @@ interface LearningStatus {
   requests?: { id: string; model: string; state: string; message: string }[]
 }
 
-function parseBatchProgress(msg: string): { current: number; total: number; loss: number | null; model: string } | null {
+function parseBatchProgress(
+  msg: string,
+): { current: number; total: number; loss: number | null; model: string } | null {
   // "YOLO26S · lote 39/87 · perda 2.9265"
   const m = msg.match(/^(\w+)\s*·\s*lote\s*(\d+)\/(\d+)(?:\s*·\s*perda\s*([\d.]+))?/i)
   if (!m) return null
@@ -27,7 +29,11 @@ function parseBatchProgress(msg: string): { current: number; total: number; loss
 }
 
 function fmt(ts: number) {
-  return new Date(ts * 1000).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  return new Date(ts * 1000).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })
 }
 
 const STATE_LABELS: Record<string, string> = {
@@ -58,7 +64,11 @@ const STATE_COLOR: Record<string, string> = {
 }
 
 function Badge({ state }: { state: string }) {
-  return <span className={`sol-badge ${STATE_COLOR[state] ?? "sol-badge-idle"}`}>{STATE_LABELS[state] ?? state}</span>
+  return (
+    <span className={`sol-badge ${STATE_COLOR[state] ?? "sol-badge-idle"}`}>
+      {STATE_LABELS[state] ?? state}
+    </span>
+  )
 }
 
 function MetricSummary({ raw }: { raw?: string | null }) {
@@ -75,9 +85,11 @@ function MetricSummary({ raw }: { raw?: string | null }) {
     const delta = r.after.reference - r.before.reference
     return (
       <p className={`sol-metric-delta ${delta >= 0 ? "sol-metric-up" : "sol-metric-down"}`}>
-        {r.model?.toUpperCase()} mAP {(r.before.reference * 100).toFixed(1)}%
-        {" → "}{(r.after.reference * 100).toFixed(1)}%
-        {" ("}{delta >= 0 ? "+" : ""}{(delta * 100).toFixed(1)}{"%)"}
+        {r.model?.toUpperCase()} mAP {(r.before.reference * 100).toFixed(1)}%{" → "}
+        {(r.after.reference * 100).toFixed(1)}%{" ("}
+        {delta >= 0 ? "+" : ""}
+        {(delta * 100).toFixed(1)}
+        {"%)"}
         {r.weights_changed ? " · pesos aplicados" : ""}
       </p>
     )
@@ -109,15 +121,22 @@ export default function LearningPanel({
       pending = true
       try {
         const value = await invoke<LearningStatus>("learning_status", { projectId })
-        if (current) { setStatus(value); setError("") }
+        if (current) {
+          setStatus(value)
+          setError("")
+        }
       } catch (err) {
         if (current) setError(String(err))
       } finally {
-        pending = false }
+        pending = false
+      }
     }
     void refresh()
     const timer = setInterval(() => void refresh(), 3000)
-    return () => { current = false; clearInterval(timer) }
+    return () => {
+      current = false
+      clearInterval(timer)
+    }
   }, [projectId, refreshRevision])
 
   async function trainNow() {
@@ -127,33 +146,43 @@ export default function LearningPanel({
       setStatus(await invoke<LearningStatus>("learning_status", { projectId }))
       setError("")
       setFeedback(receipt.message)
-    } catch (err) { setError(String(err)) }
-    finally { setBusy(false) }
+    } catch (err) {
+      setError(String(err))
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function toggle() {
     if (!status) return
     setBusy(true)
     try {
-      const value = await invoke<LearningStatus>("learning_status", { projectId, enabled: !status.enabled })
-      setStatus(value); setError("")
-    } catch (err) { setError(String(err)) }
-    finally { setBusy(false) }
+      const value = await invoke<LearningStatus>("learning_status", {
+        projectId,
+        enabled: !status.enabled,
+      })
+      setStatus(value)
+      setError("")
+    } catch (err) {
+      setError(String(err))
+    } finally {
+      setBusy(false)
+    }
   }
 
   // Derive active training job
-  const activeJob = status?.jobs.find(j => j.state === "training")
+  const activeJob = status?.jobs.find((j) => j.state === "training")
   const progress = activeJob ? parseBatchProgress(activeJob.message) : null
 
   // Requests: hide superseded ones in the main list; show in history
-  const visibleRequests = (status?.requests ?? []).filter(r => r.state !== "superseded")
-  const supersededCount = (status?.requests ?? []).filter(r => r.state === "superseded").length
+  const visibleRequests = (status?.requests ?? []).filter((r) => r.state !== "superseded")
+  const supersededCount = (status?.requests ?? []).filter((r) => r.state === "superseded").length
 
   // Recent learnings: approved jobs
-  const recentApproved = (status?.jobs ?? []).filter(j => j.state === "approved")
+  const recentApproved = (status?.jobs ?? []).filter((j) => j.state === "approved")
   // Doubts: uncertain samples + rejected candidates
   const uncertainCount = status?.samples.uncertain ?? 0
-  const rejectedJobs = (status?.jobs ?? []).filter(j => j.state === "rejected")
+  const rejectedJobs = (status?.jobs ?? []).filter((j) => j.state === "rejected")
 
   const totalSamples = Object.values(status?.samples ?? {}).reduce((s, n) => s + n, 0)
   const labeledSamples = status?.samples.labeled ?? 0
@@ -166,21 +195,41 @@ export default function LearningPanel({
         <button className="btn-ghost" disabled={!status || busy} onClick={() => void toggle()}>
           {busy ? "Atualizando…" : status?.enabled ? "Pausar" : "Retomar"}
         </button>
-        <button className="btn-ghost" disabled={!status?.runtime_ready || busy} onClick={() => void trainNow()}>
+        <button
+          className="btn-ghost"
+          disabled={!status?.runtime_ready || busy}
+          onClick={() => void trainNow()}
+        >
           Treinar agora
         </button>
       </div>
 
-      {error && <p role="alert" className="sol-error">{error}</p>}
-      {feedback && <p role="status" className="sol-feedback">{feedback}</p>}
+      {error && (
+        <p role="alert" className="sol-error">
+          {error}
+        </p>
+      )}
+      {feedback && (
+        <p role="status" className="sol-feedback">
+          {feedback}
+        </p>
+      )}
 
-      {!status && <p role="status" className="sol-muted">Consultando o motor de aprendizado…</p>}
+      {!status && (
+        <p role="status" className="sol-muted">
+          Consultando o motor de aprendizado…
+        </p>
+      )}
 
       {status && (
         <>
           {/* ── Active training card ── */}
           {activeJob && (
-            <div className="sol-train-card" aria-live="polite" aria-label="Treinamento em andamento">
+            <div
+              className="sol-train-card"
+              aria-live="polite"
+              aria-label="Treinamento em andamento"
+            >
               <div className="sol-train-header">
                 <span className="sol-train-label">
                   {progress ? `Treinando ${progress.model}` : activeJob.message}
@@ -191,17 +240,24 @@ export default function LearningPanel({
               </div>
               {progress && (
                 <>
-                  <div className="sol-progress-bar" role="progressbar"
-                    aria-valuenow={progress.current} aria-valuemax={progress.total}
-                    aria-label={`Lote ${progress.current} de ${progress.total}`}>
+                  <div
+                    className="sol-progress-bar"
+                    role="progressbar"
+                    aria-valuenow={progress.current}
+                    aria-valuemax={progress.total}
+                    aria-label={`Lote ${progress.current} de ${progress.total}`}
+                  >
                     <div
                       className="sol-progress-fill"
-                      style={{ width: `${Math.min(100, (progress.current / progress.total) * 100).toFixed(1)}%` }}
+                      style={{
+                        width: `${Math.min(100, (progress.current / progress.total) * 100).toFixed(1)}%`,
+                      }}
                     />
                   </div>
                   <div className="sol-progress-label">
                     Lote {progress.current} / {progress.total}
-                    {" · "}{Math.round((progress.current / progress.total) * 100)}%
+                    {" · "}
+                    {Math.round((progress.current / progress.total) * 100)}%
                   </div>
                 </>
               )}
@@ -221,13 +277,22 @@ export default function LearningPanel({
 
           {/* ── Metrics row ── */}
           <dl className="sol-learning-metrics">
-            <div><dt>Exemplos coletados</dt><dd>{totalSamples}</dd></div>
-            <div><dt>Verificados</dt><dd>{labeledSamples}</dd></div>
+            <div>
+              <dt>Exemplos coletados</dt>
+              <dd>{totalSamples}</dd>
+            </div>
+            <div>
+              <dt>Verificados</dt>
+              <dd>{labeledSamples}</dd>
+            </div>
             <div>
               <dt>Em dúvida</dt>
               <dd className={uncertainCount > 0 ? "sol-warn-value" : ""}>{uncertainCount}</dd>
             </div>
-            <div><dt>Modelo</dt><dd>YOLO26s</dd></div>
+            <div>
+              <dt>Modelo</dt>
+              <dd>YOLO26s</dd>
+            </div>
           </dl>
 
           {/* ── Request queue ── */}
@@ -235,7 +300,7 @@ export default function LearningPanel({
             <div className="sol-queue" aria-label="Fila de treinamento">
               <h3>Fila</h3>
               <ul>
-                {visibleRequests.map(r => (
+                {visibleRequests.map((r) => (
                   <li key={r.id} className="sol-queue-item">
                     <Badge state={r.state} />
                     <span className="sol-queue-model">{r.model.toUpperCase()}</span>
@@ -244,7 +309,8 @@ export default function LearningPanel({
                 ))}
                 {supersededCount > 0 && (
                   <li className="sol-queue-item sol-muted">
-                    +{supersededCount} pedido{supersededCount > 1 ? "s" : ""} agrupado{supersededCount > 1 ? "s" : ""}
+                    +{supersededCount} pedido{supersededCount > 1 ? "s" : ""} agrupado
+                    {supersededCount > 1 ? "s" : ""}
                   </li>
                 )}
               </ul>
@@ -256,7 +322,7 @@ export default function LearningPanel({
             <div className="sol-discoveries" aria-label="Aprendizados recentes">
               <h3>Aprendeu recentemente</h3>
               <ul>
-                {recentApproved.map(j => (
+                {recentApproved.map((j) => (
                   <li key={j.id}>
                     <span className="sol-time">{fmt(j.created)}</span>
                     <MetricSummary raw={j.metrics} />
@@ -278,7 +344,7 @@ export default function LearningPanel({
                   observações antes de incluí-los no treino.
                 </p>
               )}
-              {rejectedJobs.map(j => (
+              {rejectedJobs.map((j) => (
                 <div key={j.id} className="sol-rejected-job">
                   <span className="sol-time">{fmt(j.created)}</span>
                   <Badge state="rejected" />
@@ -305,13 +371,13 @@ export default function LearningPanel({
           )}
 
           {/* ── Full history ── */}
-          {status.jobs.filter(j => !["training"].includes(j.state)).length > 0 && (
+          {status.jobs.filter((j) => !["training"].includes(j.state)).length > 0 && (
             <details>
               <summary>Histórico de ciclos</summary>
               <ul>
                 {status.jobs
-                  .filter(j => j.state !== "training")
-                  .map(j => (
+                  .filter((j) => j.state !== "training")
+                  .map((j) => (
                     <li key={j.id}>
                       {fmt(j.created)} · <Badge state={j.state} /> {j.message}
                       <MetricSummary raw={j.metrics} />
@@ -322,6 +388,135 @@ export default function LearningPanel({
           )}
         </>
       )}
+      <DiscoveryPanel projectId={projectId} />
     </section>
+  )
+}
+
+interface VisualCluster {
+  id: number
+  size: number
+  views: number
+  sessions: number
+  name: string | null
+  suggestion: string
+  suggestion_share: number
+  stable: boolean
+  thumbnail: string | null
+}
+
+interface ClusterListing {
+  clusters: VisualCluster[]
+  regions: number
+  uncertain: number
+  stable_views: number
+  stable_sessions: number
+}
+
+function DiscoveryPanel({ projectId }: { projectId: number | null }) {
+  const [listing, setListing] = useState<ClusterListing | null>(null)
+  const [drafts, setDrafts] = useState<Record<number, string>>({})
+  const [error, setError] = useState("")
+  useEffect(() => {
+    let current = true
+    setListing(null)
+    async function refresh() {
+      try {
+        const value = await invoke<ClusterListing>("vision_clusters", { projectId })
+        if (current) {
+          setListing(value)
+          setError("")
+        }
+      } catch (err) {
+        if (current) setError(String(err))
+      }
+    }
+    void refresh()
+    const timer = setInterval(() => void refresh(), 10000)
+    return () => {
+      current = false
+      clearInterval(timer)
+    }
+  }, [projectId])
+  async function rename(cluster: VisualCluster) {
+    const name = (drafts[cluster.id] ?? cluster.name ?? "").trim()
+    try {
+      await invoke("vision_cluster_rename", {
+        projectId,
+        clusterId: cluster.id,
+        name: name || null,
+      })
+      setListing(await invoke<ClusterListing>("vision_clusters", { projectId }))
+      setError("")
+    } catch (err) {
+      setError(String(err))
+    }
+  }
+  return (
+    <details className="sol-discovery">
+      <summary>Objetos descobertos{listing ? ` · ${listing.clusters.length} grupos` : ""}</summary>
+      <p>
+        Sem rotular nada, o aprendizado recorta as regiões detectadas, extrai a aparência com o CLIP
+        e agrupa objetos parecidos. Um grupo fica estável com {listing?.stable_views ?? 10} vistas
+        independentes em pelo menos {listing?.stable_sessions ?? 2} sessões; quadros seguidos contam
+        como uma vista. Objetos muito semelhantes podem ser unidos. Dar nome é opcional.
+      </p>
+      {error && (
+        <p role="alert" className="sol-error">
+          {error}
+        </p>
+      )}
+      {listing && listing.clusters.length === 0 && (
+        <p role="status">
+          Nenhum grupo ainda ({listing.regions} regiões analisadas, {listing.uncertain} incertas).
+          Os grupos surgem enquanto a câmera coleta exemplos e o modelo CLIP está instalado.
+        </p>
+      )}
+      {!!listing?.clusters.length && (
+        <ul className="sol-discovery-grid" aria-label="Grupos de objetos descobertos">
+          {listing.clusters.map((cluster) => (
+            <li key={cluster.id} className="sol-discovery-card">
+              {cluster.thumbnail ? (
+                <img src={`data:image/jpeg;base64,${cluster.thumbnail}`} alt="" />
+              ) : (
+                <div className="sol-discovery-empty" aria-hidden="true" />
+              )}
+              <strong>{cluster.name || `Grupo ${cluster.id}`}</strong>
+              <span>
+                {cluster.views} vistas · {cluster.sessions} sessões ·{" "}
+                {cluster.stable ? "estável" : "em formação"}
+              </span>
+              {cluster.suggestion && (
+                <span>
+                  Sugestão do detector: {cluster.suggestion} (
+                  {Math.round(cluster.suggestion_share * 100)}%)
+                </span>
+              )}
+              <form
+                className="sol-toolbar"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  void rename(cluster)
+                }}
+              >
+                <input
+                  className="project-input"
+                  aria-label={`Nome do grupo ${cluster.id}`}
+                  maxLength={60}
+                  placeholder="Nome opcional"
+                  value={drafts[cluster.id] ?? cluster.name ?? ""}
+                  onChange={(event) =>
+                    setDrafts((value) => ({ ...value, [cluster.id]: event.target.value }))
+                  }
+                />
+                <button className="btn-ghost" type="submit">
+                  Salvar
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </details>
   )
 }
