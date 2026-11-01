@@ -92,12 +92,13 @@ Superfícies refrativas ativas por tela: 3 (navegação, topbar e composer), den
   `δ = θ − asin(sin θ / n)`, deslocamento `(t + h)·tan δ`, normalizado, na direção `−∇sdf` (lente convexa),
   forte na borda e nulo no centro (texto central nunca distorce). O mapa vira um PNG (meia resolução acima
   de 32 000 px², cache LRU de 48) usado por `feImage` + `feDisplacementMap` em
-  `backdrop-filter: blur(3px) url(#lente) brightness(0,5) saturate(1,5)`. Bezel 22 px / força 64 na
-  navegação e no composer; 16 px / 40 na topbar.
-- **Specular highlights**: máscara de contorno calculada pela normal da borda contra a luz do topo-esquerda
-  (`max(0, N·L)^1,5` no arco iluminado, `0,45·max(0, −N·L)^2` de reflexão interna no lado oposto, traço de
-  ~1,5 px + brilho interno de 7 px), colorida com o token existente `--sol-specular` via `mask-image`.
-  Fallback em gradiente quando o mapa não está disponível.
+  `backdrop-filter: blur(3px) url(#lente) brightness(0,5) saturate(1,5)`. Desde a v2 o perfil é uma
+  cúpula sobre **toda a superfície** (`bezel="auto"` = metade do lado menor), não um aro fixo de 16–22 px.
+  Força 64 no composer e nas barras fixas, 40 na topbar; pressionar a superfície aprofunda a lente com mola.
+- **Specular highlights**: máscara de contorno omnidirecional (traço de ~1,5 px + brilho interno de 7 px)
+  colorida por um `conic-gradient` do token `--sol-specular` que gira para a luz atual (`--sol-light-rot`,
+  §11): arco principal voltado para a luz e reflexo interno a 180°. Fallback em gradiente quando o mapa
+  não está disponível.
 - **Tom (contraste por composição)**: `brightness(0,5)` no fundo amostrado antes de uma tinta de 40 %.
   Assim a forma e a cor do conteúdo de trás continuam visíveis através do vidro, em vez de cobertas por
   uma tinta quase opaca, e o texto secundário mantém ≥ 4,5:1 mesmo sobre `#FFE3B3`.
@@ -163,7 +164,9 @@ Springs amortecidas (`ζ ≈ 0,86–0,90`, overshoot < 0,6 %) resolvidas analiti
 ## 9. Testes
 
 - `npm run test:design` — paleta imutável, ausência de literais novos, springs ↔ CSS, geometria da lente,
-  resolução de tiers e contraste WCAG.
+  resolução de tiers, contraste WCAG (inclusive sobre a cena WebGL no pior caso), mola elástica
+  (rebote único, independência de taxa de quadros, velocidade preservada), ângulo da luz e shader sem
+  cores próprias.
 - `npm run build` — TypeScript + Vite.
 
 ## 10. Comparação com a auditoria DroneCamp Vision (01/11/2026)
@@ -181,5 +184,38 @@ técnicas foram reimplementadas sem dependência nova (o projeto prefere soluç�
 | Interruptor por reduced-transparency, contrast: more, forced-colors e preferência      | Mantido (tiers)                                                           |
 | Contraste composto sobre o vidro não medido (lacuna da auditoria)                      | Testado no pior caso analítico                                            |
 | Especular estático, sem mola (lacunas da auditoria)                                    | Aqui há luz que segue o ponteiro e springs, pedidos pela diretriz SOLARIS |
-| Dispersão cromática                                                                    | Não implementada                                                          |
+| Dispersão cromática                                                                    | Implementada no shader WebGL2 (§11)                                       |
 | Desempenho medido no 4600G (lacuna da auditoria)                                       | Ainda não medido                                                          |
+
+## 11. v2 — cena WebGL2, luz dinâmica e molas (01/11/2026)
+
+Resposta às limitações apontadas pelo responsável: refração só em Chromium e só na borda, especular
+estático, fundo liso, barra superior não fixa e ausência de WebGL/GLSL/física de mola.
+
+| Limitação                       | Solução                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Refração só via SVG do Chromium | `GlassBackdrop` + `webgl/GlassRenderer.ts`: um canvas WebGL2 fixo atrás do shell desenha a cena L0 e as lâminas registradas (`<LiquidSurface webgl>`, hoje a navegação). Funciona em qualquer motor com WebGL2; sem WebGL2 ou com perda de contexto, a superfície volta ao material CSS/SVG.                                |
+| Refração só no aro de 18–22 px  | Shader: cúpula squircle sobre a superfície inteira, normal por diferenças finitas, raio refratado por Snell (`refract`, n = 1,5, espessura 56 px). Lente SVG também passou a cúpula inteira (`bezel="auto"`).                                                                                                               |
+| Sem dispersão                   | Um raio por canal: n = 1,488 / 1,5 / 1,512 (R/G/B).                                                                                                                                                                                                                                                                         |
+| Especular estático              | `lightField.ts`: luz única a 420 px acima da tela, movida pelo ponteiro (`pointermove`) ou pelo giroscópio (`deviceorientation`, ±45°). No WebGL: Fresnel de Schlick + Blinn-Phong (expoente 120) voltado para a luz; no DOM: gradiente cônico girando para `--sol-light-rot`.                                              |
+| Fundo quase liso                | Cena L0 no shader: campos de luz das cores originais (ember, gold, flare) e uma textura "seda" em glow (ruído de valor + cristas). É o que o vidro refrata.                                                                                                                                                                 |
+| Barra superior não fixa         | Além da topbar do chat, a barra de busca de Projetos e as abas do projeto viraram barras fixas de vidro refrativo (`.sol-sticky-bar`), com tinta adaptativa à rolagem.                                                                                                                                                      |
+| Sem física de mola / deformação | `springAnimator.ts`: oscilador amortecido (semi-implícito, subpassos de 1/240 s, k = 620, c = 31, ζ ≈ 0,62, um rebote de ~8 %). Pressionar botões deforma com preservação de volume (`scale` x+2,5 %, y−4,5 %); a lâmina WebGL achata ao pressionar e oscila ao recolher/expandir; pressionar o composer aprofunda a lente. |
+
+Decisões:
+
+- **Cores**: o shader não tem cores próprias. Todas chegam como uniforms lidos dos tokens CSS
+  (`--sol-bg`, `--sol-ember`, `--sol-flare`, `--sol-gold`, `--sol-specular`, `--sol-glass-base`), e o
+  teste falha se aparecer um `vec3` literal que não seja direção.
+- **Contraste**: como a cena WebGL é conhecida, o vidro WebGL usa tom 0,8 e tinta de 22 % (contra 0,5 e
+  40 % no vidro SVG). O teste soma o pior caso (todos os campos no pico no mesmo pixel + especular do
+  platô) e exige ≥ 4,5:1 para texto primário e secundário nos dois temas. No platô, o especular fica em
+  15 % para não lavar o texto; o realce forte fica nos ombros curvos da cúpula.
+- **Conteúdo real atrás do vidro**: WebGL não consegue amostrar o DOM. Topbar, composer e barras fixas,
+  que têm mensagens e cards passando por baixo, continuam na lente SVG (WebView2, que é o único alvo do
+  SOLARIS). A lâmina WebGL é usada onde o fundo é a própria cena (navegação).
+- **WebGPU**: não usado. Um único passe de tela cheia em WebGL2 cobre o efeito; WebGPU não traz ganho
+  aqui e acrescentaria um segundo caminho de renderização para manter.
+- **Custo**: renderização só sob demanda (luz, redimensionamento, mola em movimento); nada roda parado.
+  DPR limitado a 1,5. Movimento reduzido desliga as molas (fica o `:active` estático) e congela a
+  deformação. Ainda não medido no Ryzen 5 4600G.

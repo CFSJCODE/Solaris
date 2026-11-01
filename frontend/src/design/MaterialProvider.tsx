@@ -8,6 +8,7 @@ import {
   resolveTier,
   savePreference,
 } from "./materialTier"
+import { animate, ELASTIC, SpringValue } from "./springAnimator"
 
 interface MaterialContextValue {
   tier: MaterialTier
@@ -78,6 +79,78 @@ function usePointerLight(enabled: boolean) {
   }, [enabled])
 }
 
+/** Controls that deform with the elastic spring when pressed. */
+export const PRESS_SELECTOR =
+  ".btn-primary, .sol-btn-accent, .btn-ghost, .btn-danger, .chat-send.ready, .sol-nav-item, .sol-nav-toggle"
+
+/**
+ * Liquid press: a delegated listener drives one SpringValue per pressed
+ * control and writes it to `--sol-press`; CSS turns it into a
+ * volume-preserving squash (wider, shorter) that rebounds on release with
+ * the ELASTIC spring's single overshoot. The target can change mid-flight
+ * (quick double press) without losing velocity, which CSS transitions cannot do.
+ * Disabled under prefers-reduced-motion; CSS :active scale stays as fallback.
+ */
+function usePressSprings(enabled: boolean) {
+  useEffect(() => {
+    const root = document.documentElement
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")
+    if (!enabled || reduced?.matches) return
+    root.dataset.motion = "spring"
+    const springs = new WeakMap<HTMLElement, SpringValue>()
+    const running = new WeakSet<HTMLElement>()
+    let pressed: HTMLElement | null = null
+
+    const drive = (el: HTMLElement, target: number) => {
+      let spring = springs.get(el)
+      if (!spring) springs.set(el, (spring = new SpringValue(0, ELASTIC)))
+      spring.target = target
+      if (running.has(el)) return
+      running.add(el)
+      animate((dt) => {
+        const moving = spring!.step(dt)
+        if (moving || spring!.target !== 0) {
+          el.style.setProperty("--sol-press", spring!.value.toFixed(4))
+        } else el.style.removeProperty("--sol-press")
+        if (!moving) running.delete(el)
+        return moving
+      })
+    }
+    const target = (e: Event) => {
+      const el = (e.target as Element | null)?.closest?.(PRESS_SELECTOR) as HTMLElement | null
+      return el && !(el as HTMLButtonElement).disabled ? el : null
+    }
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0) return
+      pressed = target(e)
+      if (pressed) drive(pressed, 1)
+    }
+    const release = () => {
+      if (pressed) drive(pressed, 0)
+      pressed = null
+    }
+    const keyDown = (e: KeyboardEvent) => {
+      if ((e.key === " " || e.key === "Enter") && !e.repeat) {
+        pressed = target(e)
+        if (pressed) drive(pressed, 1)
+      }
+    }
+    document.addEventListener("pointerdown", down, { passive: true })
+    document.addEventListener("pointerup", release, { passive: true })
+    document.addEventListener("pointercancel", release, { passive: true })
+    document.addEventListener("keydown", keyDown)
+    document.addEventListener("keyup", release)
+    return () => {
+      delete root.dataset.motion
+      document.removeEventListener("pointerdown", down)
+      document.removeEventListener("pointerup", release)
+      document.removeEventListener("pointercancel", release)
+      document.removeEventListener("keydown", keyDown)
+      document.removeEventListener("keyup", release)
+    }
+  }, [enabled])
+}
+
 export function MaterialProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<MaterialPreference>(loadPreference)
   const [tier, setTier] = useState<MaterialTier>(() => resolveTier(preference, readEnvironment()))
@@ -95,6 +168,7 @@ export function MaterialProvider({ children }: { children: ReactNode }) {
   }, [tier])
 
   usePointerLight(tier !== "solid")
+  usePressSprings(tier !== "solid")
 
   const setPreference = useCallback((pref: MaterialPreference) => {
     savePreference(pref)

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { Project, formatDate } from "../projectApi"
 import Modal from "../components/Modal"
+import { LiquidSurface } from "../design/LiquidSurface"
 
 export default function ProjectsPage({
   projects,
@@ -122,7 +123,8 @@ export default function ProjectsPage({
           Novo projeto
         </button>
       </header>
-      <div className="workspace-filters">
+      {/* Barra fixa de Functional Glass: os cards rolam por baixo da lente. */}
+      <LiquidSurface variant="clear" refract className="workspace-filters sol-sticky-bar">
         <label className="sr-only" htmlFor="project-search">
           Buscar projetos
         </label>
@@ -146,7 +148,7 @@ export default function ProjectsPage({
             <option value="name">Nome</option>
           </select>
         </label>
-      </div>
+      </LiquidSurface>
       {error && (
         <p role="alert" className="workspace-error">
           {error}

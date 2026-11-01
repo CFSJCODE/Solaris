@@ -12,6 +12,7 @@ import { Conversation } from "../hooks/useChat"
 import MemoryPanel from "../components/MemoryPanel"
 import FolderPanel from "../components/FolderPanel"
 import Modal from "../components/Modal"
+import { LiquidSurface } from "../design/LiquidSurface"
 
 export default function ProjectWorkspace({
   project,
@@ -294,7 +295,13 @@ export default function ProjectWorkspace({
           </button>
         </div>
       </header>
-      <nav className="workspace-tabs" aria-label="Áreas do projeto">
+      <LiquidSurface
+        as="nav"
+        variant="clear"
+        refract
+        className="workspace-tabs sol-sticky-bar"
+        aria-label="Áreas do projeto"
+      >
         {[
           ["overview", "Visão geral"],
           ["files", "Arquivos"],
@@ -311,7 +318,7 @@ export default function ProjectWorkspace({
             {label}
           </button>
         ))}
-      </nav>
+      </LiquidSurface>
       {error && (
         <p role="alert" className="workspace-error">
           {error}

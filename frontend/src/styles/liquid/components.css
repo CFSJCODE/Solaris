@@ -578,3 +578,51 @@ details[open] > .chat-file-picker {
 .chat-file-picker.sol-glass {
   position: absolute;
 }
+
+/* ── Barras fixas de Functional Glass nas páginas de trabalho ──────────── */
+.sol-sticky-bar {
+  position: sticky;
+  top: var(--sol-space-2);
+  z-index: var(--sol-z-functional);
+  padding: var(--sol-space-2) var(--sol-space-3);
+  border-radius: var(--sol-radius-lg);
+  border: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
+  box-shadow: var(--sol-elev-2), var(--sol-depth-inset);
+}
+@supports (animation-timeline: scroll()) {
+  .sol-sticky-bar.sol-glass {
+    animation: sol-topbar-adapt linear both;
+    animation-timeline: scroll(nearest block);
+    animation-range: 0 48px;
+  }
+}
+
+/* ── Pressão líquida (mola elástica em runtime, MaterialProvider) ─────────
+   --sol-press vai de 0 a 1 (e ultrapassa ~8 % na volta): achata e alarga o
+   controle preservando volume, com um rebote. Sem mola (movimento reduzido),
+   vale o :active estático acima. */
+[data-motion="spring"]
+  :is(
+    .btn-primary,
+    .sol-btn-accent,
+    .btn-ghost,
+    .btn-danger,
+    .chat-send.ready,
+    .sol-nav-item,
+    .sol-nav-toggle
+  ) {
+  scale: calc(1 + var(--sol-press, 0) * 0.025 * var(--sol-motion-scale))
+    calc(1 - var(--sol-press, 0) * 0.045 * var(--sol-motion-scale));
+}
+[data-motion="spring"]
+  :is(
+    .btn-primary,
+    .sol-btn-accent,
+    .btn-ghost,
+    .btn-danger,
+    .chat-send.ready,
+    .sol-nav-item,
+    .sol-nav-toggle
+  ):active:not(:disabled) {
+  transform: none;
+}
