@@ -395,6 +395,7 @@ pub async fn chat_send(
     let mut memory_updates: Vec<MemoryUpdate> = Vec::new();
     let mut usage_val = Value::Null;
     let mut err_msg: Option<String> = None;
+    let mut memory_warning: Option<String> = None;
 
     loop {
         match rx.recv() {
@@ -403,12 +404,12 @@ pub async fn chat_send(
                 let ev_type = val["type"].as_str().unwrap_or("").to_string();
                 match ev_type.as_str() {
                     "memory_update_warning" => {
-                        let _ = ch.send(ChatEvent::MemoryWarning {
-                            message: val["message"]
-                                .as_str()
-                                .unwrap_or("Falha na atualização de memória.")
-                                .into(),
-                        });
+                        let message: String = val["message"]
+                            .as_str()
+                            .unwrap_or("Falha na atualização de memória.")
+                            .into();
+                        memory_warning = Some(message.clone());
+                        let _ = ch.send(ChatEvent::MemoryWarning { message });
                     }
                     "memory_updates" => {
                         memory_updates =
@@ -505,7 +506,11 @@ pub async fn chat_send(
                 Err(detail) => json!({"state":"failed","files":[],"detail":detail}),
             };
         } else if memory_required {
-            report = json!({"state":"failed","files":[],"detail":err_msg.as_deref().unwrap_or("O modelo não retornou registros válidos. Nenhum arquivo de memória foi alterado.")});
+            let detail = err_msg.clone().unwrap_or_else(|| match &memory_warning {
+                Some(w) => w.clone(),
+                None => "O modelo não retornou registros válidos. Nenhum arquivo de memória foi alterado.".into(),
+            });
+            report = json!({"state":"failed","files":[],"detail":detail});
         } else {
             let answer = full_reply.to_lowercase();
             if [

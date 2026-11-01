@@ -29,6 +29,45 @@ def _write(obj: dict) -> None:
     print(json.dumps(obj, ensure_ascii=False), flush=True)
 
 
+MEMORY_REQUIRED_INSTRUCTION = (
+    "\n\nPEDIDO EXPLÍCITO DE GRAVAÇÃO DE MEMÓRIA. Sua resposta inteira deve ser SOMENTE o bloco "
+    "abaixo, sem texto antes ou depois, sem cercas de código:\n"
+    '<solaris_memory>{"updates":[{"file":"DECISOES.md","content":"- Decisão 1 (fonte: AGENTS.md)\\n'
+    '- Decisão 2 (fonte: AGENTS.md)"},{"file":"MEMORY.md","content":"- Fato técnico relevante"}]}'
+    "</solaris_memory>\n"
+    "Regras: JSON válido; use \\n para quebras de linha dentro de content; cada content com no "
+    "máximo ~3000 caracteres, em tópicos curtos; file só pode ser um dos arquivos de memória "
+    "listados nas referências (AGENTS.md, README.md, CONTRIBUTING.md, MEMORY.md, DECISOES.md). "
+    "Sintetize com suas palavras o que foi pedido usando o contexto e as referências; não copie a "
+    "conversa nem os exemplos acima. Separe decisões confirmadas de propostas. Se o material é "
+    "parcial, registre essa limitação. Só retorne updates vazio se realmente não houver nada a "
+    "registrar. Não prometa salvar: a aplicação confirma a gravação depois de persistir."
+)
+
+MEMORY_RETRY_PROMPT = (
+    "Sua resposta anterior não veio no formato de memória exigido. Converta o que deve ser "
+    "registrado em JSON e responda SOMENTE com:\n"
+    '<solaris_memory>{"updates":[{"file":"DECISOES.md","content":"- item\\n- item"}]}'
+    "</solaris_memory>\n"
+    "Use apenas AGENTS.md, README.md, CONTRIBUTING.md, MEMORY.md ou DECISOES.md em file, conteúdo "
+    "em tópicos curtos (até ~3000 caracteres por item) e nada além do bloco."
+)
+
+
+def _merge_usage(first: dict, second: dict) -> dict:
+    """Soma tokens e custo dos dois passes para o painel de uso refletir o gasto real."""
+    if not first:
+        return second
+    if not second:
+        return first
+    merged = {**first, **second}
+    for key in ("input_tokens", "output_tokens", "cost_usd"):
+        values = [u.get(key) for u in (first, second) if isinstance(u.get(key), (int, float))]
+        if values:
+            merged[key] = sum(values)
+    return merged
+
+
 # ── Handlers ──────────────────────────────────────────────────────────────────
 
 
@@ -42,10 +81,9 @@ async def handle_chat_stream(req: dict) -> None:
     system = req.get("system") or None
     memory_required = bool(req.get("memory_required"))
     if memory_required:
-        system = (
-            (system or "")
-            + '\nPEDIDO EXPLÍCITO DE GRAVAÇÃO: retorne APENAS <solaris_memory>{"updates":[{"file":"MEMORY.md","content":"síntese curta dos fatos e fontes"}]}</solaris_memory>. Não prometa salvar em texto. Use o contexto e a análise anterior para sintetizar os fatos solicitados; não copie a conversa. Separe fatos documentais de decisões confirmadas. Use apenas os arquivos de memória permitidos. Se o material é parcial, registre essa limitação. Se não há informação suficiente, retorne updates vazio. A aplicação confirmará a gravação depois de persistir.'
-        )
+        # Instrução no FIM do system prompt (mais perto da geração) e com exemplo concreto:
+        # modelos menores seguem melhor um formato curto e explícito do que regras longas.
+        system = (system or "") + MEMORY_REQUIRED_INSTRUCTION
     preferred_model = req.get("model")
     preferred_provider = req.get("provider")
 
@@ -63,17 +101,20 @@ async def handle_chat_stream(req: dict) -> None:
         return
 
     accumulated = ""
-    memory_stream = MemoryStream(req.get("memory_files"))
+    memory_stream = MemoryStream(req.get("memory_files"), require_tag=not memory_required)
     errors: list[str] = []
     usage: dict = {}
+    used = (provider, model)
 
-    async def stream(prov: str, mdl: str) -> bool:
-        nonlocal accumulated, usage
+    async def stream(prov: str, mdl: str, msgs: list | None = None) -> bool:
+        nonlocal accumulated, usage, used
+        msgs = messages if msgs is None else msgs
+        used = (prov, mdl)
         try:
             gen = (
-                stream_anthropic(messages, mdl, system=system)
+                stream_anthropic(msgs, mdl, system=system)
                 if prov == "anthropic"
-                else stream_openrouter(messages, mdl, system=system)
+                else stream_openrouter(msgs, mdl, system=system)
             )
             async for event in gen:
                 if event["type"] == "delta":
@@ -107,6 +148,25 @@ async def handle_chat_stream(req: dict) -> None:
         return
 
     tail, updates, warning = memory_stream.finish()
+
+    # Fallback para modelos menores: se a gravação foi pedida e o primeiro passe não trouxe
+    # registros aproveitáveis, faz UM segundo pedido curto só de extração, com a saída anterior
+    # como insumo e o formato JSON pedido de forma direta.
+    if ok and memory_required and not updates:
+        first_output = accumulated
+        accumulated = ""
+        memory_stream = MemoryStream(req.get("memory_files"), require_tag=False)
+        retry_messages = [
+            *messages,
+            {"role": "assistant", "content": first_output[-8000:] or "(sem resposta)"},
+            {"role": "user", "content": MEMORY_RETRY_PROMPT},
+        ]
+        first_usage, usage = usage, {}
+        retry_ok = await stream(*used, retry_messages)
+        usage = _merge_usage(first_usage, usage)
+        if retry_ok:
+            _, updates, retry_warning = memory_stream.finish()
+            warning = None if updates else (retry_warning or warning)
     if tail and not memory_required:
         _write({"id": req_id, "type": "chat_delta", "text": tail})
     if not ok:
@@ -120,9 +180,11 @@ async def handle_chat_stream(req: dict) -> None:
         return
     if updates:
         _write({"id": req_id, "type": "memory_updates", "updates": updates})
-    if memory_required and not updates and not warning:
+    if memory_required and not updates:
         warning = (
-            "O modelo não retornou conteúdo válido para a memória. Nenhum arquivo foi alterado."
+            f"O modelo {used[1]} não retornou registros válidos para a memória, nem após uma "
+            "segunda tentativa só de formatação. Nenhum arquivo foi alterado. Tente de novo ou "
+            "use um modelo maior para este pedido."
         )
     if warning:
         _write({"id": req_id, "type": "memory_update_warning", "message": warning})
