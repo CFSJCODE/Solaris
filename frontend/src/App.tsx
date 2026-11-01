@@ -4,6 +4,7 @@ import ProjectsPage from "./pages/ProjectsPage"
 
 import { invoke } from "@tauri-apps/api/core"
 import VisionPage from "./pages/VisionPage"
+import UsagePage from "./pages/UsagePage"
 
 import { Project } from "./projectApi"
 import ProjectWorkspace from "./pages/ProjectWorkspace"
@@ -12,13 +13,14 @@ import { LiquidSurface } from "./design/LiquidSurface"
 import { useMaterial } from "./design/MaterialProvider"
 import { MaterialPreference } from "./design/materialTier"
 
-type View = "project" | "chat" | "projects" | "rag" | "vision"
+type View = "project" | "chat" | "projects" | "rag" | "vision" | "usage"
 
 const NAV_ITEMS: { id: View; label: string; icon: string }[] = [
   { id: "projects", label: "Projetos", icon: "⊞" },
   { id: "chat", label: "Chat", icon: "◎" },
   { id: "rag", label: "Memória", icon: "⊹" },
   { id: "vision", label: "Visão", icon: "◉" },
+  { id: "usage", label: "Uso", icon: "⊟" },
 ]
 
 export default function App() {
@@ -222,6 +224,7 @@ export default function App() {
           </section>
         )}
         {view === "vision" && <VisionPage projectId={projectId} />}
+        {view === "usage" && <UsagePage />}
       </main>
     </div>
   )

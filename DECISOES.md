@@ -100,3 +100,7 @@ de design.
 ## 01/11/2026 — Release 0.5.8 instalada
 
 Versão 0.5.7 → 0.5.8 para entregar o Liquid Glass + Fluent UI 2 (PR #30) aprovado pelo responsável. MSI gerado por `scripts/build.ps1` e instalado com backup verificável antes; engine instalado idêntico ao compilado, bancos e Markdown preservados. A conferência visual na janela nativa e a medição de CPU/GPU na rolagem ficaram pendentes porque o acesso de controle à janela foi negado nesta sessão. Detalhes em `docs/entrega-0.5.0.md`, seção "Atualização 0.5.8 instalada".
+
+## 01/11/2026 — Painel de métricas de uso
+
+Pedido do responsável: métricas de uso equivalentes às do painel “Seu uso” do Claude. Implementado: cada resposta concluída grava um evento em `usage_events` (SQLite, sem chave estrangeira para preservar o histórico após exclusões) com provedor, modelo, tokens de entrada/saída e custo. Janelas: sessão deslizante (padrão 5 h, inicia na primeira mensagem após a anterior expirar), semana com reinício em dia/hora local configuráveis (padrão sábado 12:00) e limite por modelo como fração do limite semanal. Limites são orçamentos definidos pelo usuário, não cotas dos provedores; ainda não bloqueiam envios nem alteram o roteamento. Custo desconhecido é registrado como nulo (não zero) e o OpenRouter passa a informar o custo real quando disponível. Eventos anteriores a esta versão não existem; o uso começa a contar após a atualização.

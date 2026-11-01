@@ -3,6 +3,7 @@ mod db;
 mod engine;
 mod knowledge;
 mod project_memory;
+mod usage;
 
 use std::path::PathBuf;
 use tauri::{Manager, RunEvent};
@@ -84,6 +85,8 @@ pub fn run() {
             commands::create_project,
             commands::rename_project,
             commands::delete_project,
+            commands::usage_summary,
+            commands::usage_set_limits,
         ])
         .build(tauri::generate_context!())
         .expect("error building tauri application")
