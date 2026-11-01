@@ -296,8 +296,16 @@ pub async fn chat_send(
         ))
     };
 
+    // Memory instruction goes FIRST so every model sees it before anything else.
+    let memory_instruction = if memory_enabled.unwrap_or(true) && project_id.is_some() {
+        "INSTRUÇÃO OBRIGATÓRIA — MEMÓRIA DO PROJETO: Ao concluir TODA resposta, acrescente um bloco de memória com o que for relevante desta conversa. Use o formato exato: <solaris_memory>{\"updates\":[{\"file\":\"MEMORY.md\",\"content\":\"contexto técnico, componentes, comandos, configurações, abordagens discutidas\"},{\"file\":\"DECISOES.md\",\"content\":\"decisão confirmada ou proposta, com origem\"}]}</solaris_memory>. Arquivos disponíveis: AGENTS.md (convenções, padrões do projeto), README.md (objetivo/estado atual), CONTRIBUTING.md (fluxo de trabalho), MEMORY.md (contexto técnico durável), DECISOES.md (decisões). Inclua SEMPRE o bloco se a conversa trouxe qualquer contexto técnico novo — hardware, firmware, protocolos, erros resolvidos, configurações, bibliotecas, decisões de arquitetura, mesmo que provisórias. Se um arquivo tiver apenas texto genérico de placeholder (ex: 'Registre aqui convenções'), substitua pelo conteúdo real desta conversa. Omita arquivos sem atualização. Não repita registros idênticos já presentes. Nunca registre credenciais, API keys, dados sensíveis ou transcrições. O bloco é metadado interno e NÃO aparece na resposta ao usuário.\n\n"
+    } else if memory_enabled.unwrap_or(true) {
+        "INSTRUÇÃO — MEMÓRIA: Ao concluir a resposta, se houver decisões ou mudanças duráveis novas nesta conversa, acrescente exatamente um bloco <solaris_memory>{\"updates\":[{\"file\":\"DECISOES.md\",\"content\":\"Registro curto da decisão, origem e se é confirmada ou proposta\"}]}</solaris_memory>. Sem mudança durável, omita o bloco. O bloco é metadado interno e não parte da resposta ao usuário.\n\n"
+    } else {
+        "A atualização de memória está desativada. Não gere registros de memória.\n\n"
+    };
     let mut system_context = format!(
-        "Você trabalha no projeto ativo do SOLARIS. Instruções do projeto:\n{}\n",
+        "{memory_instruction}Você trabalha no projeto ativo do SOLARIS. Instruções do projeto:\n{}\n",
         instructions.chars().take(6000).collect::<String>()
     );
     if let Some(history) = history_context {
@@ -309,14 +317,6 @@ pub async fn chat_send(
             "\n<referencia nome={:?} origem={:?}>\n{}\n</referencia>\n",
             source.filename, source.citation, source.content
         ));
-    }
-    if memory_enabled.unwrap_or(true) && project_id.is_some() {
-        system_context.push_str("\nAo concluir TODA resposta, acrescente um bloco de memória com o que for relevante desta conversa. Use o formato: <solaris_memory>{\"updates\":[{\"file\":\"MEMORY.md\",\"content\":\"contexto técnico, componentes, comandos, configurações, abordagens discutidas\"},{\"file\":\"DECISOES.md\",\"content\":\"decisão confirmada ou proposta, com origem\"}]}</solaris_memory>. Arquivos disponíveis: AGENTS.md (convenções, padrões do projeto), README.md (objetivo/estado atual), CONTRIBUTING.md (fluxo de trabalho), MEMORY.md (contexto técnico durável), DECISOES.md (decisões). Inclua sempre o bloco se a conversa trouxe qualquer contexto técnico novo — hardware, firmware, protocolos, erros resolvidos, configurações, bibliotecas, decisões de arquitetura, mesmo que provisórias. Se um arquivo tiver apenas texto genérico de placeholder (ex: 'Registre aqui convenções'), substitua pelo conteúdo real desta conversa. Omita arquivos sem atualização. Não repita registros idênticos já presentes. Nunca registre credenciais, API keys, dados sensíveis ou transcrições. O bloco é metadado interno e não aparece na resposta ao usuário.");
-    } else if memory_enabled.unwrap_or(true) {
-        system_context.push_str("\nAo concluir a resposta, se houver decisões ou mudanças duráveis novas nesta conversa, acrescente exatamente um bloco <solaris_memory>{\"updates\":[{\"file\":\"DECISOES.md\",\"content\":\"Registro curto da decisão, origem e se é confirmada ou proposta\"}]}</solaris_memory>. Use apenas os nomes de arquivos de memória apresentados no contexto: AGENTS.md (convenções), README.md (objetivo/estado), CONTRIBUTING.md (fluxo/validação), MEMORY.md (contexto durável), DECISOES.md (decisões) e outros Markdown de memória existentes quando pertinentes. Registre cada decisão em DECISOES.md e atualize também o documento pertinente. Não repita registros já existentes; não registre credenciais, dados sensíveis, prompts ou transcrições. Não invente decisões ou aprovações. Sem mudança durável, omita o bloco. O bloco é metadado interno e não parte da resposta ao usuário.");
-    } else {
-        system_context
-            .push_str("\nA atualização de memória está desativada. Não gere registros de memória.");
     }
     let req_id = next_id();
     let mut req = json!({
@@ -330,6 +330,7 @@ pub async fn chat_send(
     if let Some(p) = provider {
         req["provider"] = Value::String(p);
     }
+    let system_context_for_extract = system_context.clone();
     req["system"] = Value::String(system_context);
     req["memory_required"] = json!(memory_required);
     req["memory_files"] = json!(context_sources
@@ -481,6 +482,56 @@ pub async fn chat_send(
                 let _ = ch.send(ChatEvent::Replace { text });
             }
             let _ = ch.send(ChatEvent::MemoryReport { report });
+        }
+
+        // Auto-extraction fallback: when the model did not emit <solaris_memory> tags during
+        // the main response, run a second lightweight extraction-only request. This guarantees
+        // memory files are populated regardless of whether the model followed inline instructions.
+        if memory_enabled.unwrap_or(true)
+            && !memory_required
+            && memory_updates.is_empty()
+            && err_msg.is_none()
+            && !full_reply.is_empty()
+        {
+            let extract_messages = vec![
+                json!({"role": "user", "content": message}),
+                json!({"role": "assistant", "content": full_reply}),
+            ];
+            let extract_req_id = next_id();
+            let extract_req = json!({
+                "id": extract_req_id,
+                "type": "chat_stream",
+                "messages": extract_messages,
+                "system": system_context_for_extract,
+                "memory_required": true,
+                "memory_files": req["memory_files"],
+            });
+            let (etx, erx) = std::sync::mpsc::channel::<Value>();
+            if engine.send(extract_req, move |val: Value| { let _ = etx.send(val); }).is_ok() {
+                let mut extract_updates: Vec<MemoryUpdate> = Vec::new();
+                loop {
+                    match erx.recv() {
+                        Err(_) => break,
+                        Ok(val) => match val["type"].as_str().unwrap_or("") {
+                            "memory_updates" => {
+                                extract_updates =
+                                    serde_json::from_value(val["updates"].clone()).unwrap_or_default();
+                            }
+                            "chat_done" | "chat_error" | "error" => break,
+                            _ => {}
+                        },
+                    }
+                }
+                if !extract_updates.is_empty() {
+                    if let Ok(files) = memory.record(project_id, conversation_id, reply_id, &extract_updates) {
+                        if !files.is_empty() {
+                            let extract_report = json!({"state":"saved","files":files,"detail":"Memória gravada automaticamente após a resposta."});
+                            let _ = db_ref.save_memory_report(reply_id, &extract_report, None);
+                            let _ = ch.send(ChatEvent::MemoryReport { report: extract_report });
+                        }
+                    }
+                }
+            }
         }
     }
 
