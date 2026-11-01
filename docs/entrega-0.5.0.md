@@ -103,7 +103,7 @@ Naquele ponto, a correção ainda não tinha sido empacotada. A atualização 0.
 - Snapshot consistente pré-instalação: `%APPDATA%\com.cfsjcode.solaris\backups\antes-0.5.11-20261101-160405-b36bbcfc\manifest.json`.
 - O app não estava aberto antes da instalação, então não houve fechamento, nem normal nem forçado. Windows Installer elevado retornou 0; `solaris.exe` informa 0.5.11. Engine instalado com SHA-256 idêntico ao compilado: `E02E32E8B26BE7CE13C64AE4AE1FF0ED23795A99EB2E4ACBAB38765002E4DCF0`. A verificação pós-instalação aprovou integridade SQLite, contagens preservadas e Markdown inalterados.
 - App reaberto: janela respondendo e dois processos do engine em execução (um com ~446 MB).
-- **Pendente:** o teste real de gravação de memória com o Haiku não foi feito, porque o acesso de controle à janela foi negado. A correção só tem cobertura de testes automatizados (`tests/test_memory_small_models.py`), sem chamada a um modelo real. Não afirmar a gravação com o Haiku como validada na janela nativa.
+- Validação na janela (feita pelo responsável, conferida no disco): às 16:08, na 0.5.11, com `claude-haiku-5-5`, o pedido explícito de gravação retornou `saved` (“Gravação confirmada no armazenamento local.”) e `memory/project-1/DECISOES.md` passou de 97 para 2.184 bytes, com cópia anterior em `history/`. O mesmo modelo havia retornado `failed` às 23:36 de 31/10 (“O modelo não retornou registros válidos.”). É uma execução só, não uma taxa de sucesso; os itens gravados são automáticos, sujeitos à revisão, e o próprio registro avisa que veio de trechos truncados de `AGENTS.md`.
 
 ## Referências de compatibilidade
 
