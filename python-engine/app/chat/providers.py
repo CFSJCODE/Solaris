@@ -25,6 +25,16 @@ OPENROUTER_PRICING: dict[str, dict[str, float]] = {
 }
 
 
+def estimate_cost(
+    pricing: dict[str, dict[str, float]], model: str, input_tokens: int, output_tokens: int
+) -> float | None:
+    """Custo estimado em USD; ``None`` quando o preço do modelo é desconhecido."""
+    rates = pricing.get(model)
+    if rates is None:
+        return None
+    return input_tokens * rates["input"] + output_tokens * rates["output"]
+
+
 # Função assíncrona para transmitir mensagens para o modelo Anthropic
 async def stream_anthropic(
     messages: list[dict[str, Any]],
@@ -53,8 +63,7 @@ async def stream_anthropic(
         input_tokens = final.usage.input_tokens
         output_tokens = final.usage.output_tokens
 
-    pricing = ANTHROPIC_PRICING.get(model, {"input": 0.0, "output": 0.0})
-    cost = input_tokens * pricing["input"] + output_tokens * pricing["output"]
+    cost = estimate_cost(ANTHROPIC_PRICING, model, input_tokens, output_tokens)
     yield {
         "type": "done",
         "usage": {
@@ -85,8 +94,16 @@ async def stream_openrouter(
         "HTTP-Referer": "http://localhost",
         "X-Title": "SOLARIS",
     }
-    payload: dict[str, Any] = {"model": model, "messages": msgs, "stream": True, "max_tokens": 2048}
+    payload: dict[str, Any] = {
+        "model": model,
+        "messages": msgs,
+        "stream": True,
+        "max_tokens": 2048,
+        # Pede a contabilidade de uso (tokens e custo real) no último bloco.
+        "usage": {"include": True},
+    }
     input_tokens = output_tokens = 0
+    reported_cost: float | None = None
 
     # Usa a biblioteca padrão para evitar uma dependência externa de HTTP.
     request = Request(
@@ -116,14 +133,19 @@ async def stream_openrouter(
                 if usage:
                     input_tokens = usage.get("prompt_tokens", 0)
                     output_tokens = usage.get("completion_tokens", 0)
+                    if isinstance(usage.get("cost"), int | float):
+                        reported_cost = float(usage["cost"])
             except Exception:
                 pass
     finally:
         await asyncio.to_thread(resp.close)
 
-    # Calcula o custo com base no número de tokens de entrada e saída e nos preços definidos para o modelo
-    pricing = OPENROUTER_PRICING.get(model, {"input": 0.0, "output": 0.0})
-    cost = input_tokens * pricing["input"] + output_tokens * pricing["output"]
+    # Prefere o custo informado pelo OpenRouter; senão estima pela tabela local.
+    cost = (
+        reported_cost
+        if reported_cost is not None
+        else estimate_cost(OPENROUTER_PRICING, model, input_tokens, output_tokens)
+    )
     yield {
         "type": "done",
         "usage": {
