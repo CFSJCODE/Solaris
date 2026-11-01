@@ -74,6 +74,7 @@ export default function App() {
         as="nav"
         variant="regular"
         refract
+        webgl
         className="sol-nav"
         aria-label="Navegação principal"
         data-collapsed={collapsed ? "" : undefined}

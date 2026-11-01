@@ -89,3 +89,10 @@ Entrega: versão 0.4.0 instalada e reaberta, dados anteriores preservados. Sele�
 Diretriz do responsável: modernizar materiais, profundidade, iluminação e movimento com princípios do Apple Liquid Glass e do Fluent UI 2, **sem alterar a paleta**. Implementado em camadas de tokens separadas (`frontend/src/styles/liquid/`), com `solaris.css` intacto e teste que falha se qualquer cor original mudar ou se surgir literal de cor novo. Refração real por lente SVG (SDF + `feDisplacementMap` em `backdrop-filter`) somente na topbar e no composer do chat; tiers `liquid`/`glass`/`solid` automáticos e ajustáveis pelo usuário. Conflitos de cor e tokens indefinidos (`--sol-accent`) registrados em `docs/design/liquid-glass-fluent.md` §7 para decisão humana, sem alteração automática.
 
 Complemento (01/11/2026): `--sol-accent` passa a ser alias de `--sol-gold`, por decisão do responsável ("manter as cores originais"). O vidro foi reforçado após a avaliação de que parecia "apenas degradê": lente por Snell (n = 1,5), especular de contorno, tom multiplicativo no fundo com tinta menor, e navegação como lâmina flutuante refrativa.
+
+Limitações resolvidas (01/11/2026, a pedido do responsável): cena WebGL2 com GLSL próprio desenha o fundo
+e a lâmina de navegação com refração em toda a superfície, dispersão por canal, Fresnel e especular que
+segue ponteiro ou giroscópio; lente SVG passou a cúpula inteira; barras fixas de vidro também em
+Projetos; molas físicas em runtime para deformação ao pressionar. Shader sem cores próprias (tokens via
+uniforms) e contraste testado no pior caso. WebGPU avaliado e não adotado. Detalhes no §11 do documento
+de design.
