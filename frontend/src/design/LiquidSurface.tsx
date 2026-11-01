@@ -10,8 +10,11 @@ import {
   useRef,
   useState,
 } from "react"
-import { lensMapDataUrl, specularMapDataUrl } from "./lensMap"
+import { useGlassScene } from "./GlassBackdrop"
+import { domeBezel, lensMapDataUrl, specularMapDataUrl } from "./lensMap"
+import { lightAngle, subscribeLight } from "./lightField"
 import { useMaterial } from "./MaterialProvider"
+import { animate, ELASTIC, SpringValue } from "./springAnimator"
 
 /**
  * Material contract for SOLARIS surfaces (Fluent layer → Liquid Glass material).
@@ -22,6 +25,11 @@ import { useMaterial } from "./MaterialProvider"
  *
  * `refract` opts the surface into the SVG lens (tier "liquid" only). Keep it to
  * the 2–4 surfaces that benefit from it (design system §4, "regra de ouro").
+ * The lens is a dome over the whole surface (`bezel="auto"`), not only a rim.
+ *
+ * `webgl` hands the surface to the WebGL2 scene (GlassBackdrop) when it is
+ * active: the shader draws its glass, so it works without SVG backdrop
+ * filters. Use it for surfaces whose backdrop is the L0 canvas (sidebar).
  */
 export type GlassVariant = "regular" | "clear" | "acrylic"
 
@@ -29,8 +37,9 @@ type Props = HTMLAttributes<HTMLElement> & {
   as?: keyof JSX.IntrinsicElements
   variant?: GlassVariant
   refract?: boolean
-  /** Rim width (px) of the refracting lens. */
-  bezel?: number
+  webgl?: boolean
+  /** Width (px) of the refracting profile; "auto" = dome over the whole surface. */
+  bezel?: number | "auto"
   /** Displacement strength (px) of feDisplacementMap. */
   strength?: number
   children?: ReactNode
@@ -49,7 +58,8 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
     as = "div",
     variant = "regular",
     refract = false,
-    bezel = 22,
+    webgl = false,
+    bezel = "auto",
     strength = 64,
     className,
     style,
@@ -63,12 +73,95 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
   useImperativeHandle(forwarded, () => ref.current as HTMLElement)
   const filterId = `sol-lens-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`
   const [lens, setLens] = useState<LensState | null>(null)
-  const active = refract && tier === "liquid"
+  const scene = useGlassScene()
+  const [onScene, setOnScene] = useState(false)
+  const active = refract && tier === "liquid" && !onScene
   const lit = tier !== "solid"
+  const displacement = useRef<SVGFEDisplacementMapElement>(null)
+
+  // WebGL slab: register with the scene; width jumps (collapse) give it a
+  // spring impulse, presses squash it.
+  useEffect(() => {
+    const el = ref.current
+    if (!webgl || !el) return
+    const handle = scene.register(el)
+    setOnScene(!!handle)
+    if (!handle) return
+    let lastWidth = el.getBoundingClientRect().width
+    const ro = new ResizeObserver(() => {
+      const w = el.getBoundingClientRect().width
+      const delta = w - lastWidth
+      if (Math.abs(delta) > 24) handle.kick(Math.sign(delta) * -0.5, Math.sign(delta) * 0.35)
+      lastWidth = w
+    })
+    ro.observe(el)
+    const down = (e: PointerEvent) => e.button === 0 && handle.press(true)
+    const up = () => handle.press(false)
+    el.addEventListener("pointerdown", down)
+    window.addEventListener("pointerup", up)
+    window.addEventListener("pointercancel", up)
+    return () => {
+      ro.disconnect()
+      el.removeEventListener("pointerdown", down)
+      window.removeEventListener("pointerup", up)
+      window.removeEventListener("pointercancel", up)
+      handle.unregister()
+      setOnScene(false)
+    }
+  }, [webgl, scene])
+
+  // Dynamic specular: rotate the contour highlight toward the live light.
+  useEffect(() => {
+    const el = ref.current
+    if (!lit || onScene || !el) return
+    return subscribeLight(() => {
+      el.style.setProperty(
+        "--sol-light-rot",
+        `${lightAngle(el.getBoundingClientRect()).toFixed(1)}deg`,
+      )
+    })
+  }, [lit, onScene])
+
+  // Pressing a refracting surface deepens the lens with an elastic spring.
+  useEffect(() => {
+    const el = ref.current
+    if (!active || !el) return
+    const spring = new SpringValue(0, ELASTIC)
+    let running = false
+    const apply = () => {
+      displacement.current?.setAttribute("scale", String(strength * (1 + 0.5 * spring.value)))
+    }
+    const go = (target: number) => {
+      spring.target = target
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        spring.snap()
+        apply()
+        return
+      }
+      if (running) return
+      running = true
+      animate((dt) => {
+        const moving = spring.step(dt)
+        apply()
+        running = moving
+        return moving
+      })
+    }
+    const down = (e: PointerEvent) => e.button === 0 && go(1)
+    const up = () => go(0)
+    el.addEventListener("pointerdown", down)
+    window.addEventListener("pointerup", up)
+    window.addEventListener("pointercancel", up)
+    return () => {
+      el.removeEventListener("pointerdown", down)
+      window.removeEventListener("pointerup", up)
+      window.removeEventListener("pointercancel", up)
+    }
+  }, [active, strength])
 
   useEffect(() => {
     const el = ref.current
-    if (!lit || !el || typeof ResizeObserver === "undefined") {
+    if (!lit || onScene || !el || typeof ResizeObserver === "undefined") {
       setLens(null)
       return
     }
@@ -80,7 +173,12 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
       const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0
       const width = Math.round(rect.width)
       const height = Math.round(rect.height)
-      const geometry = { width, height, radius, bezel }
+      const geometry = {
+        width,
+        height,
+        radius,
+        bezel: bezel === "auto" ? domeBezel(width, height) : bezel,
+      }
       setLens({
         url: active ? lensMapDataUrl(geometry) : null,
         specular: specularMapDataUrl(geometry),
@@ -96,7 +194,7 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
       ro.disconnect()
       cancelAnimationFrame(frame)
     }
-  }, [active, lit, bezel])
+  }, [active, lit, onScene, bezel])
 
   const refracting = active && !!lens?.url
   const lensStyle = {
@@ -108,6 +206,7 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
     "sol-glass",
     `sol-glass--${variant}`,
     "sol-lit",
+    onScene && "sol-glass--webgl",
     refracting && "sol-glass--refract",
     lens?.specular && "sol-glass--mapped",
     className,
@@ -140,6 +239,7 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
             result="lens"
           />
           <feDisplacementMap
+            ref={displacement}
             in="SourceGraphic"
             in2="lens"
             scale={strength}

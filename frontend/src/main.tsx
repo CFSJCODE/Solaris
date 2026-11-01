@@ -7,6 +7,7 @@ import "./styles/liquid/tokens.css"
 import "./styles/liquid/materials.css"
 import "./styles/liquid/components.css"
 import { MaterialProvider } from "./design/MaterialProvider"
+import { GlassBackdrop } from "./design/GlassBackdrop"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +22,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <MaterialProvider>
-        <App />
+        <GlassBackdrop>
+          <App />
+        </GlassBackdrop>
       </MaterialProvider>
     </QueryClientProvider>
   </React.StrictMode>,
