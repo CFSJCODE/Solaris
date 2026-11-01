@@ -75,6 +75,16 @@ Naquele ponto, a correção ainda não tinha sido empacotada. A atualização 0.
 - Aplicativo reaberto; janela e dois processos do engine em execução (um com ~527 MB residentes, compatível com o YOLO26x pré-carregado).
 - **Pendente:** a validação visual na janela (refração da topbar/composer na rolagem, barra lateral como lâmina, troca Vidro líquido → Sólido) e a medição de CPU/GPU na rolagem não foram feitas: o acesso de controle à janela foi negado nesta sessão. Não afirmar o efeito visual como validado na janela nativa.
 
+## Atualização 0.5.9 instalada — 01/11/2026
+
+- Conteúdo: tudo o que entrou no main desde a 0.5.8 (main em `4543a64`): #31 (WebGL, luz dinâmica e molas), #33 (memória persistente: instrução prioritária e fallback de extração), #34/#35 (pastas locais e métricas de uso) e #36 (fundo com textura removido). Branch de release `release/0.5.9`.
+- Antes do empacotamento: `test:design` (17), `test:annotations` (5), `test:diff` (3) e build do frontend aprovados. Como a release inclui mudanças em Rust e Python, também rodaram 64 testes Python e 20 Rust (`cargo test --lib`), todos aprovados.
+- Instalador `Solaris_0.5.9_x64_en-US.msi`: 326.512.640 bytes (311,39 MiB). SHA-256 do MSI: `F8D93A360C2FB12F1A4959DCD6B362538CBAC9C0CF18CD77037669727E3FB754`. Logs em `storage/release-0.5.9/`.
+- Snapshot consistente pré-instalação: `%APPDATA%\com.cfsjcode.solaris\backups\antes-0.5.9-20261031-233225-dcb09247\manifest.json`.
+- A janela aberta (iniciada às 23:14, ociosa) não atendeu ao pedido de fechamento (WM_CLOSE/taskkill) e foi encerrada à força depois do backup; os processos do engine saíram sozinhos. Windows Installer elevado retornou 0; `solaris.exe` informa 0.5.9. Engine instalado com SHA-256 idêntico ao compilado: `E39D72A037B10CF1DD610C4EDCDE38BFD6A37FE5131E5EC915D33AC76AABCF01`.
+- App reaberto: janela e dois processos do engine em execução (um com ~499 MB). A verificação pós-instalação aprovou integridade SQLite, contagens preservadas e Markdown inalterados.
+- **Pendente:** a conferência visual (fundo escuro original sem textura, navegação como lâmina de vidro, luz seguindo o ponteiro) e as capturas não foram feitas, porque o acesso de controle à janela foi negado de novo.
+
 ## Referências de compatibilidade
 
 [Documentação oficial YOLO26](https://docs.ultralytics.com/models/yolo26) e [exportação Ultralytics](https://docs.ultralytics.com/modes/export). A compatibilidade desta entrega foi verificada na versão local 8.4.194, com pesos e dependências existentes, sem atualização indiscriminada de bibliotecas.
