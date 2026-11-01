@@ -95,6 +95,16 @@ Naquele ponto, a correção ainda não tinha sido empacotada. A atualização 0.
 - Fechamento: o app não estava aberto antes da instalação, então o teste foi feito depois, na 0.5.10. Aberta há 25 s, a janela fechou com o pedido normal (`CloseMainWindow`) e o engine saiu sem órfãos; o Log de Aplicativos não tem falha do Solaris nas últimas 24 h. A falha de fechamento vista na janela da 0.5.8 não se repetiu, mas o teste não cobre uma janela aberta há muito tempo.
 - **Pendente:** a conferência visual da navegação sem a faixa diagonal e as capturas não foram feitas, porque o acesso de controle à janela foi negado. Não afirmar a correção como validada na janela nativa; ela só tem cobertura de `test:design`.
 
+## Atualização 0.5.11 instalada — 01/11/2026
+
+- Conteúdo: gravação de memória tolerante a modelos menores, com parser mais flexível e nova tentativa no pedido explícito de gravação (#40, main em `747c5dc`), sobre a 0.5.10. Branch de release `release/0.5.11`.
+- Antes do empacotamento: `test:design` (18), `test:annotations` (5), `test:diff` (3) e build do frontend aprovados. Como a release muda Python e Rust, também rodaram 74 testes Python e 20 Rust (`cargo test --lib`), todos aprovados.
+- Instalador `Solaris_0.5.11_x64_en-US.msi`: 326.516.736 bytes (311,39 MiB). SHA-256 do MSI: `4135F48EB6ACDD9A98C884AF4EF1FD4F48DB869CD9879B737FA926B716AAFC22`. Logs em `storage/release-0.5.11/`.
+- Snapshot consistente pré-instalação: `%APPDATA%\com.cfsjcode.solaris\backups\antes-0.5.11-20261101-160405-b36bbcfc\manifest.json`.
+- O app não estava aberto antes da instalação, então não houve fechamento, nem normal nem forçado. Windows Installer elevado retornou 0; `solaris.exe` informa 0.5.11. Engine instalado com SHA-256 idêntico ao compilado: `E02E32E8B26BE7CE13C64AE4AE1FF0ED23795A99EB2E4ACBAB38765002E4DCF0`. A verificação pós-instalação aprovou integridade SQLite, contagens preservadas e Markdown inalterados.
+- App reaberto: janela respondendo e dois processos do engine em execução (um com ~446 MB).
+- Validação na janela (feita pelo responsável, conferida no disco): às 16:08, na 0.5.11, com `claude-haiku-5-5`, o pedido explícito de gravação retornou `saved` (“Gravação confirmada no armazenamento local.”) e `memory/project-1/DECISOES.md` passou de 97 para 2.184 bytes, com cópia anterior em `history/`. O mesmo modelo havia retornado `failed` às 23:36 de 31/10 (“O modelo não retornou registros válidos.”). É uma execução só, não uma taxa de sucesso; os itens gravados são automáticos, sujeitos à revisão, e o próprio registro avisa que veio de trechos truncados de `AGENTS.md`.
+
 ## Referências de compatibilidade
 
 [Documentação oficial YOLO26](https://docs.ultralytics.com/models/yolo26) e [exportação Ultralytics](https://docs.ultralytics.com/modes/export). A compatibilidade desta entrega foi verificada na versão local 8.4.194, com pesos e dependências existentes, sem atualização indiscriminada de bibliotecas.
