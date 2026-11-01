@@ -83,6 +83,15 @@ class SmallModelMemoryTests(unittest.TestCase):
         self.assertEqual(parse(text)[1], [])
         self.assertEqual(parse(text, require_tag=False)[1][0]["content"], "Decisão C")
 
+    def test_truncated_update_list_is_not_reported_as_complete(self):
+        text = (
+            '<solaris_memory>{"updates":[{"file":"DECISOES.md","content":"A"},'
+            '{"file":"MEMORY.md","content":"B"},{"file":"DECISOES.md","content":"C'
+        )
+        _, updates, warning = parse(text)
+        self.assertEqual(updates, [])
+        self.assertIsNotNone(warning)
+
     def test_empty_allowed_list_falls_back_to_default_files(self):
         text = '<solaris_memory>{"updates":[{"file":"DECISOES.md","content":"D"}]}</solaris_memory>'
         self.assertEqual(parse(text, files=[])[1][0]["file"], "DECISOES.md")
@@ -109,6 +118,10 @@ module=runpy.run_path(sys.argv[1]+'/app/main.py',run_name='fixture')
 asyncio.run(module['handle_chat_stream']({'id':'t','messages':[{'role':'user','content':'salve as decisões'}],'model':'claude-haiku-5-5','provider':'anthropic','memory_required':True,'memory_files':['DECISOES.md','MEMORY.md']}))
 assert calls==[1,3], calls
 """
+        failing_retry = harness.replace(
+            "    text = (",
+            "    if len(calls)==2: raise ConnectionError('offline')\n    text = (",
+        )
         run = subprocess.run(
             [sys.executable, "-c", harness, str(engine)],
             capture_output=True,
@@ -124,6 +137,24 @@ assert calls==[1,3], calls
         self.assertEqual(done["type"], "chat_done")
         self.assertEqual(done["usage"]["input_tokens"], 20)
         self.assertAlmostEqual(done["usage"]["cost_usd"], 0.002)
+
+        run = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                failing_retry.replace("assert calls==[1,3], calls", ""),
+                str(engine),
+            ],
+            capture_output=True,
+            encoding="utf-8",
+            timeout=20,
+        )
+        self.assertEqual(run.returncode, 0, run.stderr)
+        events = [json.loads(line) for line in run.stdout.splitlines()]
+        done = events[-1]
+        self.assertEqual(done["type"], "chat_done")
+        self.assertEqual(done["usage"]["input_tokens"], 10)
+        self.assertTrue(any(e["type"] == "memory_update_warning" for e in events))
 
 
 if __name__ == "__main__":

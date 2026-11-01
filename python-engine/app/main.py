@@ -161,7 +161,7 @@ async def handle_chat_stream(req: dict) -> None:
             {"role": "assistant", "content": first_output[-8000:] or "(sem resposta)"},
             {"role": "user", "content": MEMORY_RETRY_PROMPT},
         ]
-        first_usage = usage
+        first_usage, usage = usage, {}
         retry_ok = await stream(*used, retry_messages)
         usage = _merge_usage(first_usage, usage)
         if retry_ok:

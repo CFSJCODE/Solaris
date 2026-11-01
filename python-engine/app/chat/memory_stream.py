@@ -156,15 +156,28 @@ def _parse_payload(payload: str, allowed: set[str]) -> list[dict[str, str]] | No
 def _load_json(text: str) -> Any:
     text = _FENCE_RE.sub("", text).strip()
     decoder = json.JSONDecoder(strict=False)  # aceita quebras de linha cruas nas strings
-    for start in (i for i, c in enumerate(text) if c in "{["):
+    starts = [i for i, c in enumerate(text) if c in "{["]
+    for n, start in enumerate(starts):
         for candidate in (text[start:], _TRAILING_COMMA_RE.sub(r"\1", text[start:])):
             try:
                 data, _ = decoder.raw_decode(candidate)
             except ValueError:
                 continue
+            # Só o primeiro objeto pode ser um item avulso {file, content}. Depois dele, aceitar
+            # um item solto faria uma lista truncada parecer completa (itens perdidos sem aviso);
+            # por isso só vale um envelope explícito {"updates": [...]}, como após prosa com chaves.
+            if n > 0 and not (isinstance(data, dict) and _has_envelope(data)):
+                continue
             if _items(data) is not None:
                 return data
     return None
+
+
+def _has_envelope(data: dict[str, Any]) -> bool:
+    return any(
+        isinstance(data.get(k), list)
+        for k in ("updates", "atualizacoes", "atualizações", "memory", "memoria")
+    )
 
 
 def _items(data: Any) -> list[Any] | None:
