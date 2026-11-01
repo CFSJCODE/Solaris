@@ -1,8 +1,8 @@
 // GLSL ES 3.00 for the SOLARIS Liquid Glass renderer (WebGL2).
 //
 // One full-screen pass draws:
-//   1. the L0 scene (canvas): the original palette as soft light fields plus a
-//      fine "silk" luminance texture — something for the glass to refract;
+//   1. the L0 scene (canvas): exactly the Mica background of materials.css
+//      (--sol-bg with the ember and gold radial glows), no added texture;
 //   2. up to MAX_PANELS glass slabs over that scene, each with
 //      - a height field over the WHOLE surface (squircle dome, not only a rim),
 //      - Snell refraction per colour channel (subtle dispersion),
@@ -13,16 +13,8 @@
 
 export const MAX_PANELS = 4
 
-/**
- * Peak weight of each palette colour in the L0 scene (× --sol-scene-gain).
- * Exported so the contrast test can bound the brightest possible backdrop.
- */
-export const SCENE_WEIGHTS = { ember: 0.16, gold: 0.1, flare: 0.05, silk: 0.07 } as const
-
 /** Upper bound of the specular added over the flat plateau (where text sits). */
 export const PLATEAU_SPECULAR_MAX = 0.04 * 0.55 + 0.15 * 0.85
-
-const f = (n: number) => n.toFixed(4)
 
 export const VERTEX_SHADER = `#version 300 es
 in vec2 aPos;
@@ -39,11 +31,10 @@ uniform vec2 uRes;          // canvas size in CSS px
 uniform float uDpr;
 uniform vec3 uBg;           // --sol-bg
 uniform vec3 uEmber;        // --sol-ember
-uniform vec3 uFlare;        // --sol-flare
 uniform vec3 uGold;         // --sol-gold
 uniform vec3 uGlow;         // --sol-glow (specular)
 uniform vec3 uTint;         // --sol-glass-base (ink-900 / paper)
-uniform float uSceneGain;   // overall strength of the ambient light fields
+uniform vec2 uMica;         // --sol-mica-ember, --sol-mica-gold (0..1)
 uniform float uTintMix;     // tint over the refracted scene
 uniform float uTone;        // multiplicative tone (contrast by composition)
 uniform vec3 uLight;        // light position (px, px, height px)
@@ -62,31 +53,14 @@ float sdRoundRect(vec2 p, vec2 halfSize, float r) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
-// Smooth value noise for the silk texture.
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x),
-             mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
-}
-
 vec3 scene(vec2 p) {
+  // Same as .sol-mica: radial-gradient(120% 80% at 0 0, ember mica%, transparent 60%)
+  // and radial-gradient(90% 70% at 100% 100%, gold mica%, transparent 55%) over --sol-bg.
   vec2 uv = p / uRes;
-  vec3 c = uBg;
-  // Ambient light fields (Mica-like), one existing colour each.
-  float e = exp(-pow(length((uv - vec2(0.02, 0.0)) * vec2(1.0, 1.4)), 2.0) * 3.2);
-  float g = exp(-pow(length((uv - vec2(1.0, 1.02)) * vec2(1.0, 1.3)), 2.0) * 3.6);
-  float f = exp(-pow(length((uv - vec2(0.55, 0.45)) * vec2(1.6, 1.0)), 2.0) * 9.0);
-  c = mix(c, uEmber, ${f(SCENE_WEIGHTS.ember)} * uSceneGain * e);
-  c = mix(c, uGold, ${f(SCENE_WEIGHTS.gold)} * uSceneGain * g);
-  c = mix(c, uFlare, ${f(SCENE_WEIGHTS.flare)} * uSceneGain * f);
-  // Silk: soft diagonal luminance ridges — the detail the lens bends.
-  float n = noise(p * 0.006) * 6.2831;
-  float ridges = sin((p.x * 0.7 + p.y) * 0.035 + n * 1.6);
-  float silk = smoothstep(0.55, 1.0, ridges) * (0.35 + 0.65 * noise(p * 0.02));
-  c = mix(c, uGlow, ${f(SCENE_WEIGHTS.silk)} * uSceneGain * silk);
-  return c;
+  float e = 1.0 - clamp(length(uv / vec2(1.2, 0.8)) / 0.6, 0.0, 1.0);
+  float g = 1.0 - clamp(length((uv - 1.0) / vec2(0.9, 0.7)) / 0.55, 0.0, 1.0);
+  vec3 c = mix(uBg, uGold, uMica.y * g);
+  return mix(c, uEmber, uMica.x * e);
 }
 
 float squircle(float u) { return pow(1.0 - pow(1.0 - clamp(u, 0.0, 1.0), 4.0), 0.25); }

@@ -19,11 +19,10 @@ export interface GlassPanel {
 export interface GlassUniforms {
   bg: RGB
   ember: RGB
-  flare: RGB
   gold: RGB
   glow: RGB
   tint: RGB
-  sceneGain: number
+  mica: [number, number]
   tintMix: number
   tone: number
 }
@@ -35,11 +34,10 @@ const UNIFORMS = [
   "uDpr",
   "uBg",
   "uEmber",
-  "uFlare",
   "uGold",
   "uGlow",
   "uTint",
-  "uSceneGain",
+  "uMica",
   "uTintMix",
   "uTone",
   "uLight",
@@ -126,11 +124,10 @@ export class GlassRenderer {
     gl.uniform1f(loc.uDpr, this.dpr)
     gl.uniform3fv(loc.uBg, u.bg)
     gl.uniform3fv(loc.uEmber, u.ember)
-    gl.uniform3fv(loc.uFlare, u.flare)
     gl.uniform3fv(loc.uGold, u.gold)
     gl.uniform3fv(loc.uGlow, u.glow)
     gl.uniform3fv(loc.uTint, u.tint)
-    gl.uniform1f(loc.uSceneGain, u.sceneGain)
+    gl.uniform2f(loc.uMica, u.mica[0], u.mica[1])
     gl.uniform1f(loc.uTintMix, u.tintMix)
     gl.uniform1f(loc.uTone, u.tone)
     gl.uniform3fv(loc.uLight, light)
@@ -188,11 +185,10 @@ export function readGlassUniforms(root: HTMLElement = document.documentElement):
   const u: GlassUniforms = {
     bg: color("--sol-bg", black),
     ember: color("--sol-ember", black),
-    flare: color("--sol-flare", black),
     gold: color("--sol-gold", black),
     glow: color("--sol-specular", black),
     tint: color("--sol-glass-base", black),
-    sceneGain: num("--sol-scene-gain", 1),
+    mica: [num("--sol-mica-ember", 0.11), num("--sol-mica-gold", 0.06)],
     tintMix: num("--sol-glass-mix-webgl", 0.4),
     tone: num("--sol-glass-tone-webgl", 0.85),
   }
