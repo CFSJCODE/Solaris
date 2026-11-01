@@ -115,7 +115,7 @@ async function prepare(page: Page) {
     })
   })
   await page.goto("/")
-  await page.getByRole("button", { name: "◉ Visão" }).click()
+  await page.getByRole("button", { name: "Visão", exact: true }).click()
 }
 
 async function draw(page: Page, start: [number, number], end: [number, number]) {

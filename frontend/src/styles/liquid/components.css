@@ -1,0 +1,576 @@
+/* SOLARIS · Aplicação dos materiais aos componentes
+   Cores: somente tokens originais. Animações: somente transform/opacity,
+   exceto o recolhimento da navegação (largura), disparado pelo usuário. */
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+.sol-shell {
+  display: flex;
+  height: 100vh;
+}
+.sol-shell > main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  position: relative;
+}
+
+/* ── Navegação (Functional Glass Layer · Liquid Glass Regular) ─────────── */
+.sol-nav {
+  position: relative;
+  z-index: var(--sol-z-functional);
+  width: var(--sol-nav-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-2);
+  padding: var(--sol-space-6) var(--sol-space-3);
+  border-right: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: width var(--sol-spring-smooth-dur) var(--sol-ease-spring-smooth);
+}
+.sol-nav[data-collapsed] {
+  width: var(--sol-nav-rail);
+}
+.sol-nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sol-space-2);
+  padding: var(--sol-space-3) var(--sol-space-2) var(--sol-space-6) var(--sol-space-3);
+}
+.sol-nav-logo {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  background: var(--sol-sunset);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sol-nav[data-collapsed] .sol-nav-head {
+  flex-direction: column;
+  padding-inline: 0;
+}
+.sol-nav-toggle {
+  display: grid;
+  place-items: center;
+  min-width: var(--sol-target-min);
+  min-height: var(--sol-target-min);
+  border-radius: var(--sol-radius-md);
+  border: none;
+  background: transparent;
+  color: var(--sol-text-muted);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    background-color var(--sol-dur-feedback),
+    color var(--sol-dur-feedback),
+    transform var(--sol-spring-snappy-dur) var(--sol-ease-spring-snappy);
+}
+.sol-nav-toggle:hover {
+  color: var(--sol-text);
+  background: color-mix(in srgb, var(--sol-text) 6%, transparent);
+}
+.sol-nav-toggle:active {
+  transform: scale(0.94);
+}
+.sol-nav-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-1);
+}
+/* Indicador de seleção com fluid morphing entre itens (transform + scaleY). */
+.sol-nav-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: var(--sol-indicator-h, 44px);
+  border-radius: var(--sol-radius-md);
+  background: color-mix(in srgb, var(--sol-gold) 12%, transparent);
+  transform: translateY(var(--sol-indicator-y, 0));
+  transition:
+    transform var(--sol-spring-smooth-dur) var(--sol-ease-spring-smooth),
+    height var(--sol-spring-smooth-dur) var(--sol-ease-spring-smooth),
+    opacity var(--sol-dur-state);
+  pointer-events: none;
+}
+.sol-nav-indicator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 25%;
+  width: 3px;
+  height: 50%;
+  border-radius: var(--sol-radius-pill);
+  background: var(--sol-gold);
+}
+.sol-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sol-space-3);
+  min-height: 44px;
+  padding: var(--sol-space-3) var(--sol-space-4);
+  border-radius: var(--sol-radius-md);
+  border: none;
+  background: transparent;
+  color: var(--sol-text-muted);
+  font-size: 14px;
+  font-family: var(--sol-font-ui);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--sol-dur-feedback),
+    background-color var(--sol-dur-feedback),
+    transform var(--sol-spring-snappy-dur) var(--sol-ease-spring-snappy);
+}
+.sol-nav-item:hover:not(:disabled) {
+  color: var(--sol-text);
+  background: color-mix(in srgb, var(--sol-text) 5%, transparent);
+}
+.sol-nav-item:active:not(:disabled) {
+  transform: scale(calc(1 - 0.02 * var(--sol-motion-scale)));
+}
+.sol-nav-item[aria-current="page"] {
+  color: var(--sol-gold);
+  background: transparent;
+}
+.sol-nav-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.sol-nav-label {
+  transition: opacity var(--sol-dur-state) var(--sol-ease-out);
+}
+.sol-nav[data-collapsed] .sol-nav-label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+.sol-nav[data-collapsed] .sol-nav-item {
+  padding-inline: 0;
+  justify-content: center;
+  gap: 0;
+}
+.sol-nav[data-collapsed] .sol-nav-expanded-only {
+  display: none;
+}
+.sol-nav-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-3);
+  padding: var(--sol-space-3);
+  font-size: 12px;
+  color: var(--sol-text-muted);
+}
+.sol-nav-footer label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-1);
+}
+.sol-nav[data-collapsed] .sol-nav-footer {
+  padding-inline: 0;
+  align-items: center;
+}
+.sol-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── Topbar (Functional Glass · adaptativa à rolagem) ──────────────────── */
+.sol-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--sol-z-functional);
+  min-height: var(--sol-topbar-height);
+  padding: var(--sol-space-3) var(--sol-space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sol-space-4);
+  flex-shrink: 0;
+  border-bottom: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
+}
+.sol-topbar.sol-glass {
+  --sol-glass-mix: var(--sol-glass-mix-clear);
+}
+/* Adaptive Material: a tinta aumenta quando o conteúdo passa por baixo,
+   preservando contraste sem JS (scroll-driven animation). */
+@supports (animation-timeline: scroll()) {
+  .sol-topbar.sol-glass {
+    animation: sol-topbar-adapt linear both;
+    animation-timeline: scroll(nearest block);
+    animation-range: 0 48px;
+  }
+}
+@keyframes sol-topbar-adapt {
+  from {
+    --sol-glass-mix: var(--sol-glass-mix-clear);
+  }
+  to {
+    --sol-glass-mix: var(--sol-glass-mix-scrolled);
+  }
+}
+.sol-topbar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sol-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Chat: área rolável com topbar e composer flutuantes ───────────────── */
+.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scroll-padding-block: var(--sol-topbar-height) 160px;
+}
+.chat-messages {
+  flex: 1 0 auto;
+  padding: var(--sol-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-4);
+}
+.chat-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--sol-z-functional);
+  padding: 0 var(--sol-space-6) var(--sol-space-4);
+}
+.chat-composer {
+  border-radius: var(--sol-radius-composer);
+  padding: var(--sol-composer-pad);
+  box-shadow: var(--sol-elev-3), var(--sol-depth-inset);
+  transition: box-shadow var(--sol-dur-state) var(--sol-ease-out);
+}
+.chat-composer:focus-within {
+  box-shadow:
+    var(--sol-elev-4),
+    var(--sol-depth-inset),
+    0 0 0 var(--sol-stroke-hairline) color-mix(in srgb, var(--sol-gold) 55%, transparent);
+}
+.chat-composer .chat-attachment-bar {
+  border-top: none;
+  padding: var(--sol-space-1) var(--sol-space-3) var(--sol-space-2);
+}
+.chat-composer .chat-context-status {
+  padding: var(--sol-space-1) var(--sol-space-3);
+}
+.chat-composer-row {
+  display: flex;
+  gap: var(--sol-space-2);
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  resize: none;
+  padding: var(--sol-space-3) var(--sol-space-4);
+  border-radius: var(--sol-radius-composer-inner);
+  border: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
+  background: var(--sol-bg);
+  color: var(--sol-text);
+  font-size: 14px;
+  font-family: var(--sol-font-ui);
+  line-height: 1.5;
+  outline: none;
+  min-height: 44px;
+  max-height: 180px;
+  overflow-y: auto;
+  transition: border-color var(--sol-dur-feedback) var(--sol-ease-out);
+}
+.chat-input:focus {
+  border-color: var(--sol-gold);
+}
+.chat-send {
+  position: relative;
+  isolation: isolate;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--sol-radius-composer-inner);
+  border: none;
+  background: var(--sol-border);
+  color: var(--sol-text-muted);
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  cursor: default;
+  transition:
+    transform var(--sol-spring-snappy-dur) var(--sol-ease-spring-snappy),
+    box-shadow var(--sol-dur-state) var(--sol-ease-out);
+}
+.chat-send.ready {
+  background: var(--sol-sunset);
+  color: var(--sol-ink-950);
+  cursor: pointer;
+  box-shadow:
+    var(--sol-elev-2),
+    inset 0 1px 0 color-mix(in srgb, var(--sol-glow) 70%, transparent);
+}
+.chat-send.ready:hover {
+  transform: translateY(calc(-1px * var(--sol-motion-scale)));
+  box-shadow:
+    var(--sol-elev-3),
+    inset 0 1px 0 color-mix(in srgb, var(--sol-glow) 70%, transparent);
+}
+.chat-send.ready:active {
+  transform: scale(calc(1 - 0.06 * var(--sol-motion-scale)));
+}
+.chat-send.busy {
+  border: 1px solid var(--sol-error);
+  background: transparent;
+  color: var(--sol-error);
+}
+
+/* Conversas (L2 Structural, tonal sem blur) */
+.chat-conversations {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat-conv-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--sol-radius-md);
+  transition: background-color var(--sol-dur-feedback);
+}
+.chat-conv-row:hover {
+  background: color-mix(in srgb, var(--sol-text) 4%, transparent);
+}
+.chat-conv-row.active {
+  background: rgba(251, 185, 49, 0.1);
+}
+.chat-conv-delete {
+  padding: var(--sol-space-1) var(--sol-space-2);
+  min-width: 28px;
+  min-height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--sol-radius-sm);
+  cursor: pointer;
+  color: var(--sol-text-muted);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity var(--sol-dur-feedback);
+}
+.chat-conv-row:hover .chat-conv-delete,
+.chat-conv-row:focus-within .chat-conv-delete {
+  opacity: 1;
+}
+@media (hover: none) {
+  .chat-conv-delete {
+    opacity: 1;
+  }
+}
+
+/* ── Botões ────────────────────────────────────────────────────────────── */
+.btn-primary,
+.sol-btn-accent {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow:
+    var(--sol-elev-1),
+    inset 0 1px 0 color-mix(in srgb, var(--sol-glow) 65%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--sol-ember) 30%, transparent);
+  transition:
+    transform var(--sol-spring-snappy-dur) var(--sol-ease-spring-snappy),
+    box-shadow var(--sol-dur-state) var(--sol-ease-out),
+    opacity var(--sol-dur-feedback);
+}
+.btn-primary:hover:not(:disabled),
+.sol-btn-accent:hover:not(:disabled) {
+  transform: translateY(calc(-1px * var(--sol-motion-scale)));
+  box-shadow:
+    var(--sol-elev-2),
+    inset 0 1px 0 color-mix(in srgb, var(--sol-glow) 65%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--sol-ember) 30%, transparent);
+}
+.btn-primary:active:not(:disabled),
+.sol-btn-accent:active:not(:disabled) {
+  transform: translateY(0) scale(calc(1 - 0.03 * var(--sol-motion-scale)));
+  box-shadow:
+    var(--sol-elev-0),
+    inset 0 1px 2px color-mix(in srgb, var(--sol-ember) 35%, transparent);
+}
+.sol-btn-accent {
+  width: 100%;
+  min-height: 36px;
+  padding: var(--sol-space-2) var(--sol-space-3);
+  background: var(--sol-sunset);
+  border: none;
+  border-radius: var(--sol-radius-md);
+  color: var(--sol-ink-950);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--sol-font-ui);
+}
+.btn-ghost,
+.btn-danger,
+:where(button:not([class])) {
+  transition:
+    color var(--sol-dur-feedback),
+    border-color var(--sol-dur-feedback),
+    background-color var(--sol-dur-feedback),
+    transform var(--sol-spring-snappy-dur) var(--sol-ease-spring-snappy);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sol-text) 5%, transparent);
+}
+.btn-ghost:active:not(:disabled),
+.btn-danger:active:not(:disabled),
+:where(button:not([class])):active:not(:disabled) {
+  transform: scale(calc(1 - 0.03 * var(--sol-motion-scale)));
+}
+/* Botões sem classe herdavam o estilo do navegador; passam a seguir o
+   padrão secundário (ghost) com os tokens existentes. */
+:where(button:not([class])) {
+  min-height: var(--sol-target-min);
+  padding: var(--sol-space-2) var(--sol-space-4);
+  border-radius: var(--sol-radius-md);
+  border: var(--sol-stroke-hairline) solid var(--sol-border);
+  background: transparent;
+  color: var(--sol-text);
+  font-family: var(--sol-font-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+:where(button:not([class])):hover:not(:disabled) {
+  border-color: var(--sol-text-muted);
+  background: color-mix(in srgb, var(--sol-text) 5%, transparent);
+}
+
+/* ── Cards e painéis (Content Layer · Solid + elevação refinada) ───────── */
+.project-tile,
+.project-item,
+.workspace-panel,
+.sol-learning-panel,
+.sol-annotation-inspector,
+.sol-train-card {
+  box-shadow: var(--sol-elev-1), var(--sol-depth-inset);
+}
+.project-tile {
+  transition:
+    border-color var(--sol-dur-feedback),
+    transform var(--sol-spring-smooth-dur) var(--sol-ease-spring-smooth),
+    box-shadow var(--sol-dur-state) var(--sol-ease-out);
+}
+.project-tile:hover {
+  transform: translateY(calc(-2px * var(--sol-motion-scale)));
+  box-shadow: var(--sol-elev-3), var(--sol-depth-inset);
+}
+.sol-discovery-card {
+  background: var(--sol-surface);
+  box-shadow: var(--sol-elev-1);
+}
+
+/* ── Campos ────────────────────────────────────────────────────────────── */
+.project-input,
+.workspace-input,
+.workspace-select {
+  transition:
+    border-color var(--sol-dur-feedback) var(--sol-ease-out),
+    box-shadow var(--sol-dur-feedback) var(--sol-ease-out);
+}
+.project-input:hover:not(:disabled):not(:focus),
+.workspace-input:hover:not(:disabled):not(:focus) {
+  border-color: var(--sol-text-muted);
+}
+
+/* ── Abas ──────────────────────────────────────────────────────────────── */
+.workspace-tabs button {
+  transition:
+    color var(--sol-dur-state) var(--sol-ease-out),
+    border-color var(--sol-dur-state) var(--sol-ease-out);
+}
+.workspace-tabs button:hover:not(.active) {
+  color: var(--sol-text);
+}
+
+/* ── Overlay Layer: diálogos (Solid elevado + Smoke) ───────────────────── */
+.workspace-modal {
+  box-shadow: var(--sol-elev-5), var(--sol-depth-inset);
+}
+.workspace-modal[open] {
+  animation: sol-overlay-in var(--sol-spring-gentle-dur) var(--sol-ease-spring-gentle) both;
+}
+.workspace-modal[open]::backdrop {
+  animation: sol-fade-in var(--sol-dur-panel) var(--sol-ease-out) both;
+}
+@keyframes sol-overlay-in {
+  from {
+    opacity: 0;
+    transform: scale(calc(1 - 0.06 * var(--sol-motion-scale)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sol-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Popovers (Acrylic): seletor de arquivos do chat. */
+.chat-file-picker {
+  border-radius: var(--sol-radius-lg);
+  transform-origin: bottom left;
+}
+details[open] > .chat-file-picker {
+  animation: sol-popover-in var(--sol-spring-smooth-dur) var(--sol-ease-spring-smooth) both;
+}
+@keyframes sol-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(6px * var(--sol-motion-scale)))
+      scale(calc(1 - 0.04 * var(--sol-motion-scale)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Movimento reduzido: sem deslocamentos, só mudança de estado ───────── */
+@media (prefers-reduced-motion: reduce) {
+  .workspace-modal[open],
+  .workspace-modal[open]::backdrop,
+  details[open] > .chat-file-picker {
+    animation-duration: 1ms;
+  }
+  /* A adaptação de contraste da topbar não é movimento e permanece ativa. */
+}
+
+/* O material não altera o posicionamento do popover. */
+.chat-file-picker.sol-glass {
+  position: absolute;
+}

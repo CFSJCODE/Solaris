@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test:annotations": "node --test tests/annotationGeometry.test.mjs",
+    "test:design": "node --test tests/design.test.mjs",
     "test:vision-ui": "playwright test",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier . --write",

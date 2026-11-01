@@ -1,0 +1,286 @@
+/* SOLARIS · Liquid Glass + Fluent UI 2 — token architecture
+   ───────────────────────────────────────────────────────────
+   1. Color tokens        → src/styles/solaris.css (IMUTÁVEIS, não redefinidos aqui)
+   2. Material tokens     → opacidade, blur, refração, iluminação, composição
+   3. Elevation tokens    → sombras, profundidade, camadas (z)
+   4. Geometry tokens     → raios concêntricos, bordas, alvos, espaçamento
+   5. Motion tokens       → durações, easings, springs
+   6. Accessibility tokens→ contraste, transparência, movimento
+
+   Regra: todo valor cromático abaixo é derivado de um token de cor existente
+   via color-mix(... , transparent). Nenhuma cor-base nova é introduzida.
+   Catálogo completo: docs/design/liquid-glass-fluent.md */
+
+@property --sol-glass-mix {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 64%;
+}
+
+:root,
+[data-theme="dark"] {
+  /* ── 2. Material ─────────────────────────────────────── */
+  --sol-glass-base: var(--sol-ink-900);
+  --sol-glass-blur-regular: 18px;
+  --sol-glass-blur-clear: 10px;
+  --sol-glass-blur-acrylic: 28px;
+  /* Superfícies refrativas usam blur menor para que a lente seja perceptível. */
+  --sol-glass-blur-refract: 6px;
+  /* 72 %: texto secundário mantém 4,5:1 mesmo sobre o tom mais claro (#FFE3B3). */
+  --sol-glass-mix-refract: 72%;
+  --sol-glass-saturate: 1.5;
+  --sol-glass-mix-regular: 64%;
+  --sol-glass-mix-clear: 42%;
+  --sol-glass-mix-acrylic: 90%;
+  --sol-glass-mix-scrolled: 86%;
+  --sol-structural-mix: 86%;
+  /* Iluminação especular: luz única vinda do topo-esquerda (135°). */
+  --sol-light-angle: 160deg;
+  --sol-specular: var(--sol-glow);
+  --sol-specular-rim: 34%;
+  --sol-specular-rim-low: 8%;
+  --sol-specular-sheen: 6%;
+  --sol-specular-pointer: 9%;
+  --sol-specular-radius: 160px;
+  /* Lente (refração SVG): ver src/design/lensMap.ts */
+  --sol-lens-bezel: 18px;
+  /* Mica (canvas L0): brilho ambiente monocromático com as cores originais. */
+  --sol-mica-ember: 11%;
+  --sol-mica-gold: 6%;
+  /* Smoke (escurecimento modal): mesmo valor já usado pelo ::backdrop. */
+  --sol-smoke: color-mix(in srgb, var(--sol-ink-950) 75%, transparent);
+
+  /* ── 3. Elevation ────────────────────────────────────── */
+  --sol-shadow-color: var(--sol-ink-950);
+  --sol-shadow-strength: 1;
+  --sol-elev-0: none;
+  --sol-elev-1:
+    0 1px 2px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(28% * var(--sol-shadow-strength)),
+        transparent
+      ),
+    0 1px 1px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(18% * var(--sol-shadow-strength)),
+        transparent
+      );
+  --sol-elev-2:
+    0 2px 6px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(30% * var(--sol-shadow-strength)),
+        transparent
+      ),
+    0 1px 2px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(22% * var(--sol-shadow-strength)),
+        transparent
+      );
+  --sol-elev-3:
+    0 8px 24px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(34% * var(--sol-shadow-strength)),
+        transparent
+      ),
+    0 2px 6px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(24% * var(--sol-shadow-strength)),
+        transparent
+      );
+  --sol-elev-4:
+    0 16px 40px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(42% * var(--sol-shadow-strength)),
+        transparent
+      ),
+    0 4px 12px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(26% * var(--sol-shadow-strength)),
+        transparent
+      );
+  --sol-elev-5:
+    0 32px 72px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(52% * var(--sol-shadow-strength)),
+        transparent
+      ),
+    0 8px 20px
+      color-mix(
+        in srgb,
+        var(--sol-shadow-color) calc(30% * var(--sol-shadow-strength)),
+        transparent
+      );
+  /* Espessura física: brilho superior + sombra inferior internos. */
+  --sol-depth-inset:
+    inset 0 1px 0 color-mix(in srgb, var(--sol-specular) 14%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--sol-shadow-color) 40%, transparent);
+  --sol-z-content: 0;
+  --sol-z-functional: 20;
+  --sol-z-overlay: 100;
+
+  /* ── 4. Geometry ─────────────────────────────────────── */
+  --sol-stroke-hairline: 1px;
+  --sol-stroke-focus: 2px;
+  --sol-target-min: 32px;
+  --sol-nav-width: 260px;
+  --sol-nav-rail: 68px;
+  --sol-topbar-height: 56px;
+  /* Raios concêntricos: r_interno = r_externo − padding. */
+  --sol-composer-pad: var(--sol-space-2);
+  --sol-radius-composer-inner: calc(var(--sol-radius-composer) - var(--sol-composer-pad));
+  --sol-radius-panel-inner: calc(var(--sol-radius-xl) - var(--sol-space-2));
+
+  /* ── 5. Motion ───────────────────────────────────────── */
+  --sol-dur-feedback: 120ms;
+  --sol-dur-state: 240ms;
+  --sol-dur-panel: 320ms;
+  --sol-ease-spring-snappy: var(--sol-ease-out);
+  --sol-ease-spring-smooth: var(--sol-ease-out);
+  --sol-ease-spring-gentle: var(--sol-ease-out);
+  --sol-spring-snappy-dur: 138ms;
+  --sol-spring-smooth-dur: 267ms;
+  --sol-spring-gentle-dur: 354ms;
+  --sol-motion-scale: 1;
+
+  /* ── 6. Accessibility ────────────────────────────────── */
+  --sol-a11y-border: var(--sol-border);
+  --sol-a11y-glass-floor: 0%;
+}
+
+[data-theme="light"] {
+  --sol-glass-base: var(--sol-bg);
+  --sol-glass-mix-regular: 88%;
+  --sol-glass-mix-clear: 70%;
+  --sol-glass-mix-acrylic: 94%;
+  --sol-glass-mix-scrolled: 92%;
+  --sol-glass-mix-refract: 88%;
+  --sol-specular: var(--sol-bg);
+  --sol-specular-rim: 80%;
+  --sol-specular-sheen: 40%;
+  --sol-specular-pointer: 45%;
+  --sol-mica-ember: 8%;
+  --sol-mica-gold: 7%;
+  --sol-shadow-strength: 0.45;
+}
+
+/* Springs amostradas de src/design/spring.ts (teste garante a sincronia). */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --sol-ease-spring-snappy: linear(
+      0,
+      0.0256,
+      0.0885,
+      0.1727,
+      0.2666,
+      0.3624,
+      0.4547,
+      0.5404,
+      0.6178,
+      0.686,
+      0.7452,
+      0.7956,
+      0.8379,
+      0.8731,
+      0.9019,
+      0.9252,
+      0.9438,
+      0.9585,
+      0.97,
+      0.9789,
+      0.9857,
+      0.9907,
+      0.9944,
+      0.9971,
+      1
+    );
+    --sol-ease-spring-smooth: linear(
+      0,
+      0.0458,
+      0.1513,
+      0.2815,
+      0.4146,
+      0.5383,
+      0.6463,
+      0.7365,
+      0.8091,
+      0.8658,
+      0.9089,
+      0.9407,
+      0.9634,
+      0.9793,
+      0.9899,
+      0.9967,
+      1.0008,
+      1.003,
+      1.004,
+      1.0043,
+      1.004,
+      1.0036,
+      1.003,
+      1.0024,
+      1
+    );
+    --sol-ease-spring-gentle: linear(
+      0,
+      0.0467,
+      0.1543,
+      0.287,
+      0.4224,
+      0.5478,
+      0.6569,
+      0.7475,
+      0.8201,
+      0.8762,
+      0.9183,
+      0.949,
+      0.9706,
+      0.9852,
+      0.9947,
+      1.0005,
+      1.0037,
+      1.0052,
+      1.0056,
+      1.0054,
+      1.0048,
+      1.004,
+      1.0033,
+      1.0025,
+      1
+    );
+  }
+}
+
+/* ── Accessibility overrides ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sol-motion-scale: 0;
+    --sol-dur-feedback: 1ms;
+    --sol-dur-state: 1ms;
+    --sol-dur-panel: 1ms;
+    --sol-spring-snappy-dur: 1ms;
+    --sol-spring-smooth-dur: 1ms;
+    --sol-spring-gentle-dur: 1ms;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --sol-a11y-border: var(--sol-text-muted);
+    --sol-a11y-glass-floor: 96%;
+  }
+}
+
+@media (pointer: coarse) {
+  :root {
+    --sol-target-min: 44px;
+  }
+}

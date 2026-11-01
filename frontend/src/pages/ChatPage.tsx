@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm"
 import { invoke } from "@tauri-apps/api/core"
 import { ProjectFile, FILE_ACCEPT, uploadProjectFile } from "../projectApi"
 import { useChat, ChatMessage, Conversation } from "../hooks/useChat"
+import { LiquidSurface } from "../design/LiquidSurface"
 
 // ── Formatting helpers ──────────────────────────────────────────────────────
 
@@ -215,34 +216,9 @@ interface SidebarProps {
 
 function ConversationSidebar({ conversations, activeId, onSelect, onNew, onDelete }: SidebarProps) {
   return (
-    <aside
-      style={{
-        width: 220,
-        flexShrink: 0,
-        background: "var(--sol-surface)",
-        borderRight: "1px solid var(--sol-border)",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
+    <aside className="chat-conversations sol-structural" aria-label="Conversas">
       <div style={{ padding: "var(--sol-space-3)", borderBottom: "1px solid var(--sol-border)" }}>
-        <button
-          onClick={onNew}
-          className="sol-focusable sol-transition"
-          style={{
-            width: "100%",
-            padding: "var(--sol-space-2) var(--sol-space-3)",
-            background: "var(--sol-sunset)",
-            border: "none",
-            borderRadius: "var(--sol-radius-md)",
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "var(--sol-font-ui)",
-          }}
-        >
+        <button onClick={onNew} className="sol-btn-accent sol-focusable">
           + Nova conversa
         </button>
       </div>
@@ -261,18 +237,10 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew, onDelet
           </p>
         )}
         {conversations.map((conv) => (
-          <div
-            key={conv.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              borderRadius: "var(--sol-radius-md)",
-              background: conv.id === activeId ? "rgba(251,185,49,.10)" : "transparent",
-            }}
-          >
+          <div key={conv.id} className={`chat-conv-row${conv.id === activeId ? " active" : ""}`}>
             <button
               onClick={() => onSelect(conv.id)}
+              aria-current={conv.id === activeId ? "true" : undefined}
               className="sol-focusable sol-transition"
               style={{
                 flex: 1,
@@ -294,19 +262,8 @@ function ConversationSidebar({ conversations, activeId, onSelect, onNew, onDelet
             </button>
             <button
               onClick={() => onDelete(conv.id)}
-              className="sol-focusable sol-transition"
-              style={{
-                padding: "var(--sol-space-1) var(--sol-space-2)",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--sol-text-muted)",
-                fontSize: 12,
-                opacity: 0,
-                transition: "opacity var(--sol-duration-fast)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
+              className="chat-conv-delete sol-focusable"
+              aria-label={`Apagar conversa ${conv.title}`}
               title="Apagar conversa"
             >
               ✕
@@ -559,297 +516,229 @@ export default function ChatPage({
 
         {/* Main chat area */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Header */}
-          <div
-            style={{
-              padding: "var(--sol-space-3) var(--sol-space-6)",
-              borderBottom: "1px solid var(--sol-border)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "var(--sol-surface)",
-              flexShrink: 0,
-            }}
-          >
-            <div>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--sol-text)" }}>
-                {activeConversation?.title ?? "Chat"}
-              </span>
-            </div>
-            {activeConversation && (
-              <label>
-                Mover conversa para
-                <select
-                  className="project-input"
-                  disabled={isStreaming}
-                  value={projectId ?? ""}
-                  onChange={(e) =>
-                    void moveConversation(e.target.value ? Number(e.target.value) : null)
-                  }
-                >
-                  <option value="">Sem projeto</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {streamingModel && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--sol-space-2)",
-                  fontSize: 12,
-                  color: "var(--sol-flare)",
-                }}
-              >
-                <StreamingDots />
-                <span>{streamingModel}</span>
-              </div>
-            )}
-          </div>
-
-          {error && (
-            <p role="alert" className="sol-error">
-              {error}
-            </p>
-          )}
-          {memorySources.length > 0 && (
-            <details className="sol-memory-sources">
-              <summary>Contexto recuperado de {memorySources.length} trechos do projeto</summary>
-              {memorySources.map((source, i) => (
-                <div key={i}>
-                  <strong>{source.title}</strong>
-                  <p>{source.content}</p>
-                </div>
-              ))}
-            </details>
-          )}
-          {/* Messages */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "var(--sol-space-6)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--sol-space-4)",
-            }}
-          >
-            {messages.length === 0 && !isStreaming && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: 1,
-                  gap: "var(--sol-space-4)",
-                  color: "var(--sol-text-muted)",
-                }}
-              >
+          <div className="chat-scroll">
+            {/* Topbar: Functional Glass, conteúdo rola por baixo */}
+            <LiquidSurface
+              as="header"
+              variant="clear"
+              refract
+              bezel={14}
+              strength={24}
+              className="sol-topbar"
+            >
+              <h1 className="sol-topbar-title">{activeConversation?.title ?? "Chat"}</h1>
+              {activeConversation && (
+                <label>
+                  Mover conversa para
+                  <select
+                    className="project-input"
+                    disabled={isStreaming}
+                    value={projectId ?? ""}
+                    onChange={(e) =>
+                      void moveConversation(e.target.value ? Number(e.target.value) : null)
+                    }
+                  >
+                    <option value="">Sem projeto</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {streamingModel && (
                 <div
                   style={{
-                    fontSize: 32,
-                    fontWeight: 700,
-                    background: "var(--sol-sunset)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    letterSpacing: "0.08em",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--sol-space-2)",
+                    fontSize: 12,
+                    color: "var(--sol-flare)",
                   }}
                 >
-                  SOLARIS
+                  <StreamingDots />
+                  <span>{streamingModel}</span>
                 </div>
-                <p style={{ fontSize: 15 }}>Olá, como posso ajudar?</p>
-              </div>
+              )}
+            </LiquidSurface>
+
+            {error && (
+              <p role="alert" className="sol-error">
+                {error}
+              </p>
             )}
+            {memorySources.length > 0 && (
+              <details className="sol-memory-sources">
+                <summary>Contexto recuperado de {memorySources.length} trechos do projeto</summary>
+                {memorySources.map((source, i) => (
+                  <div key={i}>
+                    <strong>{source.title}</strong>
+                    <p>{source.content}</p>
+                  </div>
+                ))}
+              </details>
+            )}
+            {/* Messages */}
+            <div className="chat-messages">
+              {messages.length === 0 && !isStreaming && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flex: 1,
+                    gap: "var(--sol-space-4)",
+                    color: "var(--sol-text-muted)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 32,
+                      fontWeight: 700,
+                      background: "var(--sol-sunset)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    SOLARIS
+                  </div>
+                  <p style={{ fontSize: 15 }}>Olá, como posso ajudar?</p>
+                </div>
+              )}
 
-            {messages.map((msg, i) => (
-              <MessageBubble
-                key={i}
-                msg={msg}
-                isLast={i === messages.length - 1}
-                isStreaming={isStreaming}
-              />
-            ))}
-            <div ref={bottomRef} />
-          </div>
+              {messages.map((msg, i) => (
+                <MessageBubble
+                  key={i}
+                  msg={msg}
+                  isLast={i === messages.length - 1}
+                  isStreaming={isStreaming}
+                />
+              ))}
+              <div ref={bottomRef} />
+            </div>
 
-          {(memorySaved.length > 0 || memoryWarning) && (
-            <p role="status" className="chat-context-status">
-              {memoryWarning || `Memórias atualizadas: ${memorySaved.join(", ")}`}
-            </p>
-          )}
-          {contextSources.length > 0 && isStreaming && (
-            <p className="chat-context-status">
-              Consultando {new Set(contextSources.map((s) => s.filename)).size} arquivos do projeto.
-            </p>
-          )}
-          {fileError && (
-            <p role="alert" className="workspace-error">
-              {fileError}
-            </p>
-          )}
-          <div className="chat-attachment-bar">
-            <input
-              ref={attachmentInput}
-              className="sr-only"
-              type="file"
-              multiple
-              accept={FILE_ACCEPT}
-              onChange={(e) => {
-                void attach(e.target.files)
-                e.target.value = ""
-              }}
-            />
-            <button
-              className="btn-ghost"
-              disabled={isStreaming || uploading}
-              onClick={() => attachmentInput.current?.click()}
-            >
-              {uploading ? "Lendo arquivos…" : "Anexar arquivos"}
-            </button>
-            <details>
-              <summary>Arquivos do projeto ({files.length})</summary>
-              <div className="chat-file-picker">
-                {files.map((file) => (
-                  <label key={file.id}>
+            {/* Composer flutuante: Liquid Glass com refração (superfície L3) */}
+            <div className="chat-dock">
+              <LiquidSurface variant="regular" refract className="chat-composer">
+                {(memorySaved.length > 0 || memoryWarning) && (
+                  <p role="status" className="chat-context-status">
+                    {memoryWarning || `Memórias atualizadas: ${memorySaved.join(", ")}`}
+                  </p>
+                )}
+                {contextSources.length > 0 && isStreaming && (
+                  <p className="chat-context-status">
+                    Consultando {new Set(contextSources.map((s) => s.filename)).size} arquivos do
+                    projeto.
+                  </p>
+                )}
+                {fileError && (
+                  <p role="alert" className="workspace-error">
+                    {fileError}
+                  </p>
+                )}
+                <div className="chat-attachment-bar">
+                  <input
+                    ref={attachmentInput}
+                    className="sr-only"
+                    type="file"
+                    multiple
+                    accept={FILE_ACCEPT}
+                    onChange={(e) => {
+                      void attach(e.target.files)
+                      e.target.value = ""
+                    }}
+                  />
+                  <button
+                    className="btn-ghost"
+                    disabled={isStreaming || uploading}
+                    onClick={() => attachmentInput.current?.click()}
+                  >
+                    {uploading ? "Lendo arquivos…" : "Anexar arquivos"}
+                  </button>
+                  <details>
+                    <summary>Arquivos do projeto ({files.length})</summary>
+                    <div className="chat-file-picker sol-glass sol-glass--acrylic">
+                      {files.map((file) => (
+                        <label key={file.id}>
+                          <input
+                            type="checkbox"
+                            disabled={
+                              isStreaming ||
+                              uploading ||
+                              (!attachmentIds.includes(file.id) && attachmentIds.length >= 12)
+                            }
+                            checked={attachmentIds.includes(file.id)}
+                            onChange={(e) =>
+                              setAttachmentIds((prev) =>
+                                e.target.checked
+                                  ? [...prev, file.id]
+                                  : prev.filter((id) => id !== file.id),
+                              )
+                            }
+                          />
+                          {file.filename}
+                        </label>
+                      ))}
+                      {!files.length && <p>Nenhum arquivo adicionado.</p>}
+                    </div>
+                  </details>
+                  <label>
                     <input
                       type="checkbox"
-                      disabled={
-                        isStreaming ||
-                        uploading ||
-                        (!attachmentIds.includes(file.id) && attachmentIds.length >= 12)
-                      }
-                      checked={attachmentIds.includes(file.id)}
-                      onChange={(e) =>
-                        setAttachmentIds((prev) =>
-                          e.target.checked
-                            ? [...prev, file.id]
-                            : prev.filter((id) => id !== file.id),
-                        )
-                      }
+                      checked={useProjectFiles}
+                      disabled={isStreaming}
+                      onChange={(e) => setUseProjectFiles(e.target.checked)}
                     />
-                    {file.filename}
+                    Buscar no projeto
                   </label>
-                ))}
-                {!files.length && <p>Nenhum arquivo adicionado.</p>}
-              </div>
-            </details>
-            <label>
-              <input
-                type="checkbox"
-                checked={useProjectFiles}
-                disabled={isStreaming}
-                onChange={(e) => setUseProjectFiles(e.target.checked)}
-              />
-              Buscar no projeto
-            </label>
-            {attachmentIds.length > 0 && (
-              <span>{attachmentIds.length} anexo(s) selecionado(s)</span>
-            )}
-          </div>
-          {/* Input area */}
-          <form
-            onSubmit={handleSend}
-            style={{
-              padding: "var(--sol-space-4) var(--sol-space-6)",
-              borderTop: "1px solid var(--sol-border)",
-              background: "var(--sol-surface)",
-              display: "flex",
-              gap: "var(--sol-space-3)",
-              alignItems: "flex-end",
-              flexShrink: 0,
-            }}
-          >
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onInput={handleTextareaInput}
-              placeholder="Mensagem… (Enter para enviar, Shift+Enter nova linha)"
-              rows={1}
-              disabled={isStreaming || uploading}
-              className="sol-focusable"
-              style={{
-                flex: 1,
-                resize: "none",
-                padding: "var(--sol-space-3) var(--sol-space-4)",
-                borderRadius: "var(--sol-radius-lg)",
-                border: "1px solid var(--sol-border)",
-                background: "var(--sol-bg)",
-                color: "var(--sol-text)",
-                fontSize: 14,
-                fontFamily: "var(--sol-font-ui)",
-                lineHeight: 1.5,
-                outline: "none",
-                minHeight: 42,
-                maxHeight: 180,
-                overflowY: "auto",
-                transition: "border-color var(--sol-duration-fast)",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--sol-gold)"
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--sol-border)"
-              }}
-            />
+                  {attachmentIds.length > 0 && (
+                    <span>{attachmentIds.length} anexo(s) selecionado(s)</span>
+                  )}
+                </div>
+                {/* Input area */}
+                <form onSubmit={handleSend} className="chat-composer-row">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onInput={handleTextareaInput}
+                    placeholder="Mensagem… (Enter para enviar, Shift+Enter nova linha)"
+                    rows={1}
+                    disabled={isStreaming || uploading}
+                    aria-label="Mensagem"
+                    className="chat-input sol-focusable"
+                  />
 
-            {isStreaming ? (
-              <button
-                type="button"
-                disabled
-                className="sol-focusable sol-transition"
-                title="Aguarde a conclusão da resposta"
-                style={{
-                  width: 42,
-                  height: 42,
-                  flexShrink: 0,
-                  borderRadius: "var(--sol-radius-lg)",
-                  border: "1px solid var(--sol-error)",
-                  background: "transparent",
-                  color: "var(--sol-error)",
-                  cursor: "pointer",
-                  fontSize: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                …
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!input.trim() || uploading}
-                className="sol-focusable sol-transition"
-                title="Enviar"
-                style={{
-                  width: 42,
-                  height: 42,
-                  flexShrink: 0,
-                  borderRadius: "var(--sol-radius-lg)",
-                  border: "none",
-                  background: input.trim() ? "var(--sol-sunset)" : "var(--sol-border)",
-                  color: input.trim() ? "var(--sol-ink-950)" : "var(--sol-text-muted)",
-                  cursor: input.trim() ? "pointer" : "default",
-                  fontSize: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "background var(--sol-duration-fast), color var(--sol-duration-fast)",
-                }}
-              >
-                ➤
-              </button>
-            )}
-          </form>
+                  {isStreaming ? (
+                    <button
+                      type="button"
+                      disabled
+                      title="Aguarde a conclusão da resposta"
+                      aria-label="Aguarde a conclusão da resposta"
+                      className="chat-send busy"
+                    >
+                      …
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!input.trim() || uploading}
+                      className={`chat-send sol-focusable${input.trim() ? " ready sol-lit" : ""}`}
+                      title="Enviar"
+                      aria-label="Enviar"
+                    >
+                      ➤
+                    </button>
+                  )}
+                </form>
+              </LiquidSurface>
+            </div>
+          </div>
         </div>
       </div>
     </>
