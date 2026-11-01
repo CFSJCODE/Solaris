@@ -216,6 +216,11 @@ Decisões:
   SOLARIS). A lâmina WebGL é usada onde o fundo é a própria cena (navegação).
 - **WebGPU**: não usado. Um único passe de tela cheia em WebGL2 cobre o efeito; WebGPU não traz ganho
   aqui e acrescentaria um segundo caminho de renderização para manter.
+- **Sem vinco diagonal** (correção de 01/11/2026): uma cúpula calculada direto sobre o SDF do retângulo
+  arredondado tem um vinco nas diagonais que saem dos cantos (eixo medial), visível como uma faixa
+  diagonal na refração e no especular. A altura agora é o produto de perfis suaves por eixo e pelo raio
+  do canto (`domeHeight` em `lensMap.ts`, mesma função no shader), sem descontinuidade de normal;
+  há teste para isso.
 - **Custo**: renderização só sob demanda (luz, redimensionamento, mola em movimento); nada roda parado.
   DPR limitado a 1,5. Movimento reduzido desliga as molas (fica o `:active` estático) e congela a
   deformação. Ainda não medido no Ryzen 5 4600G.
