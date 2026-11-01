@@ -264,6 +264,7 @@ fn migrate(conn: &Connection) -> Result<()> {
         conn.execute_batch("BEGIN; INSERT INTO messages_fts(messages_fts) VALUES ('rebuild'); INSERT INTO schema_migrations VALUES (1); COMMIT;")?;
     }
     crate::knowledge::migrate(conn)?;
+    crate::workspace::migrate(conn)?;
     Ok(())
 }
 

@@ -1547,3 +1547,157 @@ textarea.workspace-input {
   color: var(--sol-text-muted);
   font-size: 0.875rem;
 }
+
+/* ── Pastas locais e propostas de edição ─────────────────────────────── */
+.folder-row.active .file-open strong {
+  color: var(--sol-gold);
+}
+.folder-path {
+  font-family: var(--sol-font-mono);
+  overflow-wrap: anywhere;
+}
+.folder-browser {
+  margin-top: 16px;
+}
+.folder-tree {
+  max-height: 420px;
+  overflow: auto;
+  margin-top: 8px;
+  border: 1px solid var(--sol-border);
+  border-radius: 12px;
+  padding: 4px 8px;
+}
+.folder-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--sol-border);
+}
+.folder-tree-row:last-child {
+  border-bottom: none;
+}
+.folder-tree-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: var(--sol-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.folder-tree-path {
+  font-family: var(--sol-font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.folder-tree-open small {
+  color: var(--sol-text-muted);
+  font-size: 11px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.folder-tree-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--sol-text-muted);
+}
+.folder-tree-dot.indexed {
+  border-color: var(--sol-gold);
+  background: var(--sol-gold);
+}
+.chat-folder-file {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--sol-border);
+  background: none;
+  color: var(--sol-text);
+  font-family: var(--sol-font-mono);
+  font-size: 12px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.chat-folder-file:hover,
+.chat-folder-file:focus-visible {
+  color: var(--sol-gold);
+}
+.edit-proposals {
+  margin-top: 24px;
+}
+.edit-proposals.compact {
+  margin: 0;
+  padding: 8px 24px;
+  max-height: 200px;
+  overflow: auto;
+}
+.edit-proposals.compact h2 {
+  font-size: 13px;
+}
+.edit-status {
+  font-size: 11px;
+  color: var(--sol-text-muted);
+}
+.edit-status.pending {
+  color: var(--sol-gold);
+}
+.edit-status.applied {
+  color: var(--sol-success);
+}
+.edit-status.conflict,
+.edit-status.failed {
+  color: var(--sol-error);
+}
+.edit-stat.add {
+  color: var(--sol-success);
+}
+.edit-stat.del {
+  color: var(--sol-error);
+}
+.edit-diff {
+  max-height: 60vh;
+  overflow: auto;
+  margin: 16px 0;
+  border: 1px solid var(--sol-border);
+  border-radius: 8px;
+  font-family: var(--sol-font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.edit-diff-line {
+  display: grid;
+  grid-template-columns: 40px 40px 16px 1fr;
+}
+.edit-diff-line code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.edit-diff-line.add {
+  background: color-mix(in srgb, var(--sol-success) 12%, transparent);
+}
+.edit-diff-line.del {
+  background: color-mix(in srgb, var(--sol-error) 12%, transparent);
+}
+.edit-diff-no {
+  padding-right: 8px;
+  text-align: right;
+  color: var(--sol-text-muted);
+  user-select: none;
+}
+.edit-diff-sign {
+  color: var(--sol-text-muted);
+  user-select: none;
+}
+.edit-diff-gap {
+  padding: 4px 8px;
+  color: var(--sol-text-muted);
+  background: color-mix(in srgb, var(--sol-text) 4%, transparent);
+}

@@ -2,7 +2,15 @@ import { useEffect, useRef, useState, KeyboardEvent, FormEvent } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { invoke } from "@tauri-apps/api/core"
-import { ProjectFile, FILE_ACCEPT, uploadProjectFile } from "../projectApi"
+import {
+  ProjectFile,
+  FolderFile,
+  ProjectFolder,
+  FILE_ACCEPT,
+  mentionFor,
+  uploadProjectFile,
+} from "../projectApi"
+import EditProposals from "../components/EditProposals"
 import { useChat, ChatMessage, Conversation } from "../hooks/useChat"
 import { LiquidSurface } from "../design/LiquidSurface"
 
@@ -46,6 +54,16 @@ function StreamingDots() {
       ))}
     </span>
   )
+}
+
+/** Exibe blocos de edição em andamento como código enquanto a resposta chega. */
+function renderEditBlocks(content: string): string {
+  return content
+    .replace(
+      /<solaris_edit[^>]*?(?:caminho|path)=["']([^"']+)["'][^>]*>\n?/g,
+      "\n\n**Proposta de edição: `$1`**\n\n```\n",
+    )
+    .replace(/\n?<\/solaris_edit>/g, "\n```\n")
 }
 
 interface MessageBubbleProps {
@@ -107,7 +125,7 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
                 ),
               }}
             >
-              {msg.content}
+              {renderEditBlocks(msg.content)}
             </ReactMarkdown>
             {isLast && isStreaming && (
               <span
@@ -150,9 +168,11 @@ function MessageBubble({ msg, isLast, isStreaming }: MessageBubbleProps) {
               <small>
                 {source.kind === "memory"
                   ? "Memória do projeto"
-                  : source.kind === "environment"
-                    ? "Perfil de observação do ambiente"
-                    : "Arquivo de referência"}{" "}
+                  : source.kind === "folder"
+                    ? "Pasta local"
+                    : source.kind === "environment"
+                      ? "Perfil de observação do ambiente"
+                      : "Arquivo de referência"}{" "}
                 · {source.citation}
               </small>
               <p>{source.content}</p>
@@ -291,6 +311,7 @@ export default function ChatPage({
   onBusy: (busy: boolean) => void
 }) {
   const {
+    editsVersion,
     error,
     memorySources,
     contextSources,
@@ -314,6 +335,9 @@ export default function ChatPage({
   const [useProjectFiles, setUseProjectFiles] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [fileError, setFileError] = useState("")
+  const [folders, setFolders] = useState<ProjectFolder[]>([])
+  const [folderFiles, setFolderFiles] = useState<FolderFile[]>([])
+  const [folderFilter, setFolderFilter] = useState("")
   const attachmentInput = useRef<HTMLInputElement>(null)
   const initialLoaded = useRef(false)
   useEffect(() => {
@@ -321,6 +345,41 @@ export default function ChatPage({
       .then(setFiles)
       .catch((err) => setFileError(String(err)))
   }, [projectId])
+  useEffect(() => {
+    if (projectId === null) {
+      setFolders([])
+      return
+    }
+    invoke<ProjectFolder[]>("folder_list", { projectId })
+      .then((list) => setFolders(list.filter((f) => f.enabled)))
+      .catch((err) => setFileError(String(err)))
+  }, [projectId, editsVersion])
+  useEffect(() => {
+    if (projectId === null || !folders.length) {
+      setFolderFiles([])
+      return
+    }
+    const timer = setTimeout(() => {
+      Promise.all(
+        folders.map((f) =>
+          invoke<FolderFile[]>("folder_files", {
+            projectId,
+            folderId: f.id,
+            filter: folderFilter,
+            limit: 60,
+          }),
+        ),
+      )
+        .then((lists) => setFolderFiles(lists.flat().slice(0, 120)))
+        .catch((err) => setFileError(String(err)))
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [projectId, folders, folderFilter])
+  function insertMention(relPath: string) {
+    const mention = mentionFor(relPath)
+    setInput((prev) => (prev.trim() ? `${prev.trimEnd()} ${mention} ` : `${mention} `))
+    textareaRef.current?.focus()
+  }
   useEffect(() => {
     if (
       initialConversationId &&
@@ -640,6 +699,9 @@ export default function ChatPage({
                     {fileError}
                   </p>
                 )}
+                {projectId !== null && (
+                  <EditProposals projectId={projectId} refreshKey={editsVersion} compact />
+                )}
                 <div className="chat-attachment-bar">
                   <input
                     ref={attachmentInput}
@@ -686,6 +748,36 @@ export default function ChatPage({
                       {!files.length && <p>Nenhum arquivo adicionado.</p>}
                     </div>
                   </details>
+                  {folders.length > 0 && (
+                    <details>
+                      <summary>Pastas locais ({folders.length})</summary>
+                      <div className="chat-file-picker sol-glass sol-glass--acrylic">
+                        <input
+                          className="workspace-input"
+                          type="search"
+                          aria-label="Buscar arquivo nas pastas"
+                          placeholder="Buscar arquivo…"
+                          value={folderFilter}
+                          onChange={(e) => setFolderFilter(e.target.value)}
+                        />
+                        <p className="workspace-muted">
+                          Escolha um arquivo para enviá-lo inteiro com @caminho.
+                        </p>
+                        {folderFiles.map((file) => (
+                          <button
+                            key={`${file.folder_id}:${file.rel_path}`}
+                            type="button"
+                            className="chat-folder-file"
+                            disabled={isStreaming}
+                            onClick={() => insertMention(file.rel_path)}
+                          >
+                            {file.rel_path}
+                          </button>
+                        ))}
+                        {!folderFiles.length && <p>Nenhum arquivo encontrado.</p>}
+                      </div>
+                    </details>
+                  )}
                   <label>
                     <input
                       type="checkbox"

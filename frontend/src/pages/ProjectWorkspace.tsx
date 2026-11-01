@@ -10,6 +10,7 @@ import {
 } from "../projectApi"
 import { Conversation } from "../hooks/useChat"
 import MemoryPanel from "../components/MemoryPanel"
+import FolderPanel from "../components/FolderPanel"
 import Modal from "../components/Modal"
 
 export default function ProjectWorkspace({
@@ -297,6 +298,7 @@ export default function ProjectWorkspace({
         {[
           ["overview", "Visão geral"],
           ["files", "Arquivos"],
+          ["folders", "Pastas locais"],
           ["memory", "Memória e documentos"],
           ["instructions", "Instruções"],
         ].map(([key, label]) => (
@@ -372,6 +374,7 @@ export default function ProjectWorkspace({
           </section>
           <aside className="project-context-column">
             {fileLibrary(true)}
+            <FolderPanel projectId={project.id} compact onOpenTab={() => setTab("folders")} />
             <section className="workspace-panel">
               <div className="workspace-section-heading">
                 <h2>Memória viva</h2>
@@ -400,6 +403,7 @@ export default function ProjectWorkspace({
         </div>
       )}
       {tab === "files" && fileLibrary()}
+      {tab === "folders" && <FolderPanel projectId={project.id} />}
       {tab === "memory" && <MemoryPanel projectId={project.id} />}
       {tab === "instructions" && (
         <section className="workspace-settings">
