@@ -25,19 +25,23 @@
   --sol-glass-blur-clear: 10px;
   --sol-glass-blur-acrylic: 28px;
   /* Superfícies refrativas usam blur menor para que a lente seja perceptível. */
-  --sol-glass-blur-refract: 6px;
-  /* 72 %: texto secundário mantém 4,5:1 mesmo sobre o tom mais claro (#FFE3B3). */
-  --sol-glass-mix-refract: 72%;
+  --sol-glass-blur-refract: 3px;
+  /* Tom: escurece o fundo amostrado (multiplicativo) antes da tinta; mantém a
+     cor e a forma do que passa por trás visíveis sem perder contraste. */
+  --sol-glass-tone: 0.5;
+  /* Com tom 0,5, 40 % de tinta mantém texto secundário ≥ 4,5:1 sobre #FFE3B3. */
+  --sol-glass-mix-refract: 40%;
   --sol-glass-saturate: 1.5;
-  --sol-glass-mix-regular: 64%;
-  --sol-glass-mix-clear: 42%;
+  --sol-glass-mix-regular: 40%;
+  --sol-glass-mix-clear: 24%;
   --sol-glass-mix-acrylic: 90%;
-  --sol-glass-mix-scrolled: 86%;
+  --sol-glass-mix-scrolled: 40%;
   --sol-structural-mix: 86%;
   /* Iluminação especular: luz única vinda do topo-esquerda (135°). */
   --sol-light-angle: 160deg;
   --sol-specular: var(--sol-glow);
   --sol-specular-rim: 34%;
+  --sol-specular-strength: 0.9;
   --sol-specular-rim-low: 8%;
   --sol-specular-sheen: 6%;
   --sol-specular-pointer: 9%;
@@ -163,6 +167,7 @@
   --sol-glass-mix-acrylic: 94%;
   --sol-glass-mix-scrolled: 92%;
   --sol-glass-mix-refract: 88%;
+  --sol-glass-tone: 1;
   --sol-specular: var(--sol-bg);
   --sol-specular-rim: 80%;
   --sol-specular-sheen: 40%;

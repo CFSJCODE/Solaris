@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react"
-import { lensMapDataUrl } from "./lensMap"
+import { lensMapDataUrl, specularMapDataUrl } from "./lensMap"
 import { useMaterial } from "./MaterialProvider"
 
 /**
@@ -38,7 +38,8 @@ type Props = HTMLAttributes<HTMLElement> & {
 }
 
 interface LensState {
-  url: string
+  url: string | null
+  specular: string | null
   width: number
   height: number
 }
@@ -48,8 +49,8 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
     as = "div",
     variant = "regular",
     refract = false,
-    bezel = 18,
-    strength = 28,
+    bezel = 22,
+    strength = 64,
     className,
     style,
     children,
@@ -63,10 +64,11 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
   const filterId = `sol-lens-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`
   const [lens, setLens] = useState<LensState | null>(null)
   const active = refract && tier === "liquid"
+  const lit = tier !== "solid"
 
   useEffect(() => {
     const el = ref.current
-    if (!active || !el || typeof ResizeObserver === "undefined") {
+    if (!lit || !el || typeof ResizeObserver === "undefined") {
       setLens(null)
       return
     }
@@ -78,8 +80,13 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
       const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0
       const width = Math.round(rect.width)
       const height = Math.round(rect.height)
-      const url = lensMapDataUrl({ width, height, radius, bezel })
-      if (url) setLens({ url, width, height })
+      const geometry = { width, height, radius, bezel }
+      setLens({
+        url: active ? lensMapDataUrl(geometry) : null,
+        specular: specularMapDataUrl(geometry),
+        width,
+        height,
+      })
     }
     const ro = new ResizeObserver(() => {
       if (!frame) frame = requestAnimationFrame(measure)
@@ -89,16 +96,20 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
       ro.disconnect()
       cancelAnimationFrame(frame)
     }
-  }, [active, bezel])
+  }, [active, lit, bezel])
 
-  const lensStyle: CSSProperties | undefined =
-    active && lens ? ({ "--sol-lens": `url(#${filterId})` } as CSSProperties) : undefined
+  const refracting = active && !!lens?.url
+  const lensStyle = {
+    ...(refracting ? { "--sol-lens": `url(#${filterId})` } : {}),
+    ...(lens?.specular ? { "--sol-specular-map": `url(${lens.specular})` } : {}),
+  } as CSSProperties
 
   const classes = [
     "sol-glass",
     `sol-glass--${variant}`,
     "sol-lit",
-    active && lens && "sol-glass--refract",
+    refracting && "sol-glass--refract",
+    lens?.specular && "sol-glass--mapped",
     className,
   ]
     .filter(Boolean)
@@ -107,7 +118,7 @@ export const LiquidSurface = forwardRef<HTMLElement, Props>(function LiquidSurfa
   return createElement(
     as,
     { ...rest, ref, className: classes, style: { ...style, ...lensStyle } },
-    active && lens && (
+    refracting && lens?.url && (
       <svg className="sol-lens-defs" aria-hidden="true" focusable="false" width="0" height="0">
         <filter
           id={filterId}

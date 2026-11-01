@@ -49,6 +49,55 @@ export function rimSlope(u: number): number {
   return Math.min(1, slope / 4)
 }
 
+/** Squircle height profile h(u) = (1 − (1 − u)^4)^(1/4), u ∈ [0, 1]. */
+export function squircleHeight(u: number): number {
+  if (u <= 0) return 0
+  if (u >= 1) return 1
+  return Math.pow(1 - Math.pow(1 - u, 4), 0.25)
+}
+
+export const REFRACTIVE_INDEX = 1.5
+const THICKNESS = 0.6
+const LUT_SIZE = 128
+
+/**
+ * Snell refraction look-up table over the rim depth u ∈ [0, 1].
+ *
+ * A vertical ray hits the glass surface whose normal is tilted by
+ * θ = atan(dh/dx); inside the glass it travels at θt = asin(sin θ / n).
+ * The angular deviation δ = θ − θt, carried through the slab thickness
+ * (t + h), shifts the sampled background by  (t + h) · tan δ.
+ * Values are normalised so the strongest displacement is 1.
+ */
+export function snellLut(n = REFRACTIVE_INDEX, size = LUT_SIZE): Float32Array {
+  const lut = new Float32Array(size)
+  const du = 1 / (size - 1)
+  let max = 0
+  for (let i = 0; i < size; i++) {
+    const u = i * du
+    const u0 = Math.max(0, u - du / 2)
+    const u1 = Math.min(1, u + du / 2)
+    // Slope in "rim widths": the bezel is the horizontal extent of the curve.
+    const slope = (squircleHeight(u1) - squircleHeight(u0)) / (u1 - u0 || 1)
+    const theta = Math.atan(slope)
+    const thetaT = Math.asin(Math.sin(theta) / n)
+    const shift = (THICKNESS + squircleHeight(u)) * Math.tan(theta - thetaT)
+    lut[i] = shift
+    max = Math.max(max, shift)
+  }
+  for (let i = 0; i < size; i++) lut[i] = max ? lut[i] / max : 0
+  return lut
+}
+
+const LUT = snellLut()
+
+function lutAt(u: number): number {
+  const x = Math.min(1, Math.max(0, u)) * (LUT.length - 1)
+  const i = Math.floor(x)
+  const f = x - i
+  return i + 1 < LUT.length ? LUT[i] * (1 - f) + LUT[i + 1] * f : LUT[i]
+}
+
 /**
  * Build RGBA pixels for the displacement map. `scale` < 1 renders a smaller
  * map that the SVG filter stretches back, which keeps CPU cost proportional
@@ -77,8 +126,8 @@ export function buildLensPixels(
         const gx = roundedRectSdf(x + e, y, geometry) - roundedRectSdf(x - e, y, geometry)
         const gy = roundedRectSdf(x, y + e, geometry) - roundedRectSdf(x, y - e, geometry)
         const len = Math.hypot(gx, gy) || 1
-        const strength = rimSlope(-d / geometry.bezel)
-        // Pull samples inward (−∇sdf points to the centre).
+        const strength = lutAt(-d / geometry.bezel)
+        // Convex lens: sample toward the centre (−∇sdf), magnifying the rim.
         dx = (-gx / len) * strength
         dy = (-gy / len) * strength
       }
@@ -92,17 +141,69 @@ export function buildLensPixels(
   return { width: w, height: h, data }
 }
 
+/**
+ * Specular mask along the contour (alpha only; the colour comes from the
+ * existing `--sol-specular` token through CSS `mask-image`).
+ *
+ * For each rim pixel the outward normal N = ∇sdf is compared with the light
+ * direction L (top-left, matching `--sol-light-angle`):
+ *   key   = max(0, N·L)^1.5     bright arc facing the light
+ *   back  = max(0, −N·L)^2      dimmer internal reflection on the far side
+ * attenuated by depth into the glass (a crisp ~1.5 px line plus a soft
+ * 6 px glow), which gives the edge a sense of thickness.
+ */
+export function buildSpecularPixels(
+  geometry: LensGeometry,
+  light: { x: number; y: number } = { x: -0.45, y: -0.89 },
+): { width: number; height: number; data: Uint8ClampedArray<ArrayBuffer> } {
+  const w = Math.max(2, Math.round(geometry.width))
+  const h = Math.max(2, Math.round(geometry.height))
+  const data = new Uint8ClampedArray(new ArrayBuffer(w * h * 4))
+  const lLen = Math.hypot(light.x, light.y) || 1
+  const lx = light.x / lLen
+  const ly = light.y / lLen
+  const e = 0.5
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const x = i + 0.5
+      const y = j + 0.5
+      const d = roundedRectSdf(x, y, geometry)
+      if (d > 0.5 || d < -7) continue
+      const gx = roundedRectSdf(x + e, y, geometry) - roundedRectSdf(x - e, y, geometry)
+      const gy = roundedRectSdf(x, y + e, geometry) - roundedRectSdf(x, y - e, geometry)
+      const len = Math.hypot(gx, gy) || 1
+      const ndl = (gx / len) * lx + (gy / len) * ly
+      const key = Math.pow(Math.max(0, ndl), 1.5)
+      const back = 0.45 * Math.pow(Math.max(0, -ndl), 2)
+      const depth = -d
+      const line = Math.max(0, 1 - Math.abs(depth - 0.75) / 1.25) // ~1.5 px crisp rim
+      const glow = depth < 7 ? 0.28 * (1 - depth / 7) ** 2 : 0
+      const a = Math.min(1, (key + back) * (line + glow) + 0.12 * line)
+      const k = (j * w + i) * 4
+      data[k] = 255
+      data[k + 1] = 255
+      data[k + 2] = 255
+      data[k + 3] = Math.round(a * 255)
+    }
+  }
+  return { width: w, height: h, data }
+}
+
 const cache = new Map<string, string>()
 
-/** PNG data URL of the lens map; memoised by geometry (rounded to 4 px). */
-export function lensMapDataUrl(geometry: LensGeometry): string | null {
+function toDataUrl(
+  key: string,
+  build: () => { width: number; height: number; data: Uint8ClampedArray<ArrayBuffer> },
+): string | null {
   if (typeof document === "undefined") return null
-  const key = [geometry.width, geometry.height, geometry.radius, geometry.bezel]
-    .map((v) => Math.round(v / 4) * 4)
-    .join("x")
   const hit = cache.get(key)
-  if (hit) return hit
-  const { width, height, data } = buildLensPixels(geometry)
+  if (hit) {
+    // LRU: refresh recency.
+    cache.delete(key)
+    cache.set(key, hit)
+    return hit
+  }
+  const { width, height, data } = build()
   const canvas = document.createElement("canvas")
   canvas.width = width
   canvas.height = height
@@ -110,7 +211,21 @@ export function lensMapDataUrl(geometry: LensGeometry): string | null {
   if (!ctx) return null
   ctx.putImageData(new ImageData(data, width, height), 0, 0)
   const url = canvas.toDataURL("image/png")
-  if (cache.size > 24) cache.clear()
+  if (cache.size >= 48) cache.delete(cache.keys().next().value as string)
   cache.set(key, url)
   return url
+}
+
+const geometryKey = (g: LensGeometry) =>
+  [g.width, g.height, g.radius, g.bezel].map((v) => Math.round(v)).join("x")
+
+/** PNG data URL of the lens map; LRU-memoised by geometry. */
+export function lensMapDataUrl(geometry: LensGeometry): string | null {
+  const scale = geometry.width * geometry.height > 32000 ? 0.5 : 1
+  return toDataUrl(`lens:${geometryKey(geometry)}`, () => buildLensPixels(geometry, scale))
+}
+
+/** PNG data URL of the specular contour mask; LRU-memoised by geometry. */
+export function specularMapDataUrl(geometry: LensGeometry): string | null {
+  return toDataUrl(`spec:${geometryKey(geometry)}`, () => buildSpecularPixels(geometry))
 }

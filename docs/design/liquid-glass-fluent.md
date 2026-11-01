@@ -82,20 +82,28 @@ Toda tinta, brilho e sombra é `color-mix(in srgb, <token existente> N%, transpa
 | L2 Structural       | tonal estável, sem blur                                                                  | lista de conversas                                               |
 | L3 Overlay          | **Acrylic** + **Smoke**                                                                  | popover de arquivos (acrylic), diálogos (sólido elevado + smoke) |
 
-Superfícies refrativas ativas por tela: no máximo 2 (topbar e composer), conforme a "regra de ouro" do
-design system.
+Superfícies refrativas ativas por tela: 3 (navegação, topbar e composer), dentro da faixa de 2 a 4 da
+"regra de ouro" do design system.
 
 ## 4. Liquid Glass — implementação
 
 - **Refração/lensing** (`design/lensMap.ts`): SDF de retângulo arredondado; perfil de borda squircle
-  `h(u) = (1 − (1 − u)^4)^(1/4)`; o deslocamento segue `−∇sdf` com intensidade proporcional à inclinação,
-  forte na borda e nulo no centro (texto central nunca distorce). O mapa vira um PNG (meia resolução,
-  memoizado) usado por `feImage` + `feDisplacementMap` em `backdrop-filter: blur() url(#lente) saturate()`.
-- **Specular highlights**: borda luminosa com gradiente na direção da luz (`--sol-light-angle`), máscara
-  `content-box`/`exclude`; brilho de topo (`sheen`) e espessura física (`--sol-depth-inset`).
+  `h(u) = (1 − (1 − u)^4)^(1/4)`; tabela de 128 entradas pela lei de Snell (n = 1,5, espessura 0,6):
+  `δ = θ − asin(sin θ / n)`, deslocamento `(t + h)·tan δ`, normalizado, na direção `−∇sdf` (lente convexa),
+  forte na borda e nulo no centro (texto central nunca distorce). O mapa vira um PNG (meia resolução acima
+  de 32 000 px², cache LRU de 48) usado por `feImage` + `feDisplacementMap` em
+  `backdrop-filter: blur(3px) url(#lente) brightness(0,5) saturate(1,5)`. Bezel 22 px / força 64 na
+  navegação e no composer; 16 px / 40 na topbar.
+- **Specular highlights**: máscara de contorno calculada pela normal da borda contra a luz do topo-esquerda
+  (`max(0, N·L)^1,5` no arco iluminado, `0,45·max(0, −N·L)^2` de reflexão interna no lado oposto, traço de
+  ~1,5 px + brilho interno de 7 px), colorida com o token existente `--sol-specular` via `mask-image`.
+  Fallback em gradiente quando o mapa não está disponível.
+- **Tom (contraste por composição)**: `brightness(0,5)` no fundo amostrado antes de uma tinta de 40 %.
+  Assim a forma e a cor do conteúdo de trás continuam visíveis através do vidro, em vez de cobertas por
+  uma tinta quase opaca, e o texto secundário mantém ≥ 4,5:1 mesmo sobre `#FFE3B3`.
 - **Interactive lighting**: um único listener delegado, limitado por `requestAnimationFrame`, grava
   `--sol-light-x/y` só no elemento sob o ponteiro (`.sol-lit`, `.btn-primary`, `.sol-btn-accent`).
-- **Adaptive material**: a topbar aumenta a tinta de 42 % para 86 % conforme o conteúdo rola por baixo,
+- **Adaptive material**: a topbar aumenta a tinta de 24 % para 40 % conforme o conteúdo rola por baixo,
   via `animation-timeline: scroll()` (sem JS); o contraste mínimo é garantido por teste.
 - **Tiers progressivos** (`data-material` no `<html>`): `liquid` (lente + blur + luz, Chromium/WebView2),
   `glass` (blur + luz), `solid` (opaco). Escolha automática por capacidade e preferências do sistema, com
@@ -133,12 +141,11 @@ Springs amortecidas (`ζ ≈ 0,86–0,90`, overshoot < 0,6 %) resolvidas analiti
    `--sol-ink-950`. Nenhum token mudou.
 2. **Foco no tema claro**: contorno `gold` sobre `paper` tem ≈1,7:1 (WCAG 2.4.11 pede 3:1). O tema claro não
    está ativo no app; manter registrado.
-3. **Tokens referenciados mas não definidos** em `solaris.css`: `--sol-accent`, `--sol-warn` (com fallback),
-   `--sol-surface-raised` (com fallback), `--sol-duration-fast`, `--sol-font-display`, `--sol-optical-surface`
-   (com fallback). Sem `--sol-accent`, `.sol-progress-fill`, `.sol-badge-active`, `.sol-feedback`,
-   `.sol-project-hint` e `.sol-train-card` perdem a cor pretendida (a barra de progresso fica invisível).
-   Não foi criado valor para não reinterpretar a paleta: decidir qual cor original (`gold`? `flare`?)
-   deve ser o `accent`.
+3. **`--sol-accent` resolvido (01/11/2026, decisão do responsável)**: definido como alias
+   `var(--sol-gold)`, sem cor nova. A barra de progresso de treino, `.sol-badge-active`, `.sol-feedback`,
+   `.sol-project-hint` e `.sol-train-card` voltam a usar a cor pretendida. Continuam referenciados sem
+   definição: `--sol-warn` e `--sol-surface-raised` (ambos com fallback), `--sol-duration-fast`,
+   `--sol-font-display`, `--sol-optical-surface` (com fallback).
 4. **Literais fora da paleta** já existentes nos badges (`#8888FF`, `#4CAF50`, `#E07B39`): preservados.
 5. **Mica**: o Windows Mica real amostra o papel de parede; a janela Tauri é opaca (`transparent: false`),
    então o canvas usa brilho ambiente monocromático das cores originais, como previsto no design system
@@ -158,3 +165,21 @@ Springs amortecidas (`ζ ≈ 0,86–0,90`, overshoot < 0,6 %) resolvidas analiti
 - `npm run test:design` — paleta imutável, ausência de literais novos, springs ↔ CSS, geometria da lente,
   resolução de tiers e contraste WCAG.
 - `npm run build` — TypeScript + Vite.
+
+## 10. Comparação com a auditoria DroneCamp Vision (01/11/2026)
+
+A auditoria de outro projeto do responsável foi usada como referência de técnicas comprovadas. Aqui as
+técnicas foram reimplementadas sem dependência nova (o projeto prefere soluções nativas):
+
+| Técnica da auditoria                                                                   | SOLARIS                                                                   |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Lente por SDF + Snell n = 1,5, LUT 128, `feDisplacementMap` em `backdrop-filter`       | Implementado (`lensMap.ts`), sem `@liqui-design/glass`                    |
+| Especular pela normal do contorno                                                      | Implementado como máscara de contorno colorida por token                  |
+| Cache LRU de mapas, meia resolução acima de 32k px²                                    | Implementado (48 entradas)                                                |
+| Topbar sticky com conteúdo rolando por baixo ("o vidro precisa de algo para refratar") | Implementado (topbar e composer flutuante)                                |
+| Vidro só em navegação, barras, menus e diálogos; dados sólidos                         | Mantido                                                                   |
+| Interruptor por reduced-transparency, contrast: more, forced-colors e preferência      | Mantido (tiers)                                                           |
+| Contraste composto sobre o vidro não medido (lacuna da auditoria)                      | Testado no pior caso analítico                                            |
+| Especular estático, sem mola (lacunas da auditoria)                                    | Aqui há luz que segue o ponteiro e springs, pedidos pela diretriz SOLARIS |
+| Dispersão cromática                                                                    | Não implementada                                                          |
+| Desempenho medido no 4600G (lacuna da auditoria)                                       | Ainda não medido                                                          |

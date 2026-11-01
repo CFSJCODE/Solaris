@@ -522,8 +522,8 @@ export default function ChatPage({
               as="header"
               variant="clear"
               refract
-              bezel={14}
-              strength={24}
+              bezel={16}
+              strength={40}
               className="sol-topbar"
             >
               <h1 className="sol-topbar-title">{activeConversation?.title ?? "Chat"}</h1>

@@ -57,8 +57,10 @@
       var(--sol-glass-base) max(var(--sol-glass-mix), var(--sol-a11y-glass-floor)),
       transparent
     );
-  -webkit-backdrop-filter: blur(var(--sol-glass-blur)) saturate(var(--sol-glass-saturate));
-  backdrop-filter: blur(var(--sol-glass-blur)) saturate(var(--sol-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--sol-glass-blur)) brightness(var(--sol-glass-tone))
+    saturate(var(--sol-glass-saturate));
+  backdrop-filter: blur(var(--sol-glass-blur)) brightness(var(--sol-glass-tone))
+    saturate(var(--sol-glass-saturate));
   box-shadow: var(--sol-depth-inset);
 }
 .sol-glass--clear {
@@ -78,8 +80,21 @@
   --sol-glass-blur: var(--sol-glass-blur-refract);
   --sol-glass-mix: var(--sol-glass-mix-refract);
   -webkit-backdrop-filter: blur(var(--sol-glass-blur)) var(--sol-lens)
+    brightness(var(--sol-glass-tone)) saturate(var(--sol-glass-saturate));
+  backdrop-filter: blur(var(--sol-glass-blur)) var(--sol-lens) brightness(var(--sol-glass-tone))
     saturate(var(--sol-glass-saturate));
-  backdrop-filter: blur(var(--sol-glass-blur)) var(--sol-lens) saturate(var(--sol-glass-saturate));
+}
+
+/* Especular de contorno: máscara calculada pela normal da borda (lensMap.ts),
+   colorida com o token existente --sol-specular. Substitui o aro em gradiente. */
+.sol-glass--mapped::before {
+  padding: 0;
+  background: var(--sol-specular);
+  opacity: var(--sol-specular-strength);
+  -webkit-mask: var(--sol-specular-map) 0 0 / 100% 100% no-repeat;
+  -webkit-mask-composite: source-over;
+  mask: var(--sol-specular-map) 0 0 / 100% 100% no-repeat;
+  mask-composite: add;
 }
 
 /* Specular rim: borda luminosa com direção de luz coerente (topo → base). */

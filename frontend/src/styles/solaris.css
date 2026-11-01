@@ -19,6 +19,8 @@
   --sol-flare: #f88f22;
   --sol-gold: #fbb931;
   --sol-glow: #ffe3b3;
+  /* Acento semântico: alias da cor original gold (decisão de 01/11/2026). */
+  --sol-accent: var(--sol-gold);
   --sol-sunset: linear-gradient(
     105deg,
     var(--sol-ember) 0%,

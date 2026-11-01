@@ -140,7 +140,10 @@ const tokenPercent = (name, theme = 0) =>
 
 test("text on refractive glass keeps AA contrast over the brightest backdrop", () => {
   // Worst case: dark glass over the lightest palette color (glow), no blur averaging.
-  const glass = mix(hex("#11141b"), hex("#ffe3b3"), tokenPercent("--sol-glass-mix-refract"))
+  // The backdrop is first darkened by brightness(--sol-glass-tone), then tinted.
+  const tone = Number(liquid[0].match(/--sol-glass-tone:\s*([\d.]+);/)[1])
+  const backdrop = hex("#ffe3b3").map((v) => v * tone)
+  const glass = mix(hex("#11141b"), backdrop, tokenPercent("--sol-glass-mix-refract"))
   assert.ok(ratio(hex("#f9f8f6"), glass) >= 4.5, "primary text")
   assert.ok(ratio(hex("#c1c4cb"), glass) >= 4.5, "secondary text")
   // Light theme: paper glass over the darkest ink.
@@ -150,7 +153,10 @@ test("text on refractive glass keeps AA contrast over the brightest backdrop", (
 })
 
 test("topbar reaches AA for normal text once content scrolls beneath it", () => {
-  const scrolled = mix(hex("#11141b"), hex("#ffe3b3"), tokenPercent("--sol-glass-mix-scrolled"))
+  const tone = Number(liquid[0].match(/--sol-glass-tone:\s*([\d.]+);/)[1])
+  const backdrop = hex("#ffe3b3").map((v) => v * tone)
+  const scrolled = mix(hex("#11141b"), backdrop, tokenPercent("--sol-glass-mix-scrolled"))
+  assert.ok(ratio(hex("#c1c4cb"), scrolled) >= 4.5)
   assert.ok(ratio(hex("#f9f8f6"), scrolled) >= 4.5)
 })
 

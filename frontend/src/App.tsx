@@ -73,6 +73,7 @@ export default function App() {
       <LiquidSurface
         as="nav"
         variant="regular"
+        refract
         className="sol-nav"
         aria-label="Navegação principal"
         data-collapsed={collapsed ? "" : undefined}

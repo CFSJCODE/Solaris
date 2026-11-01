@@ -20,11 +20,15 @@
   z-index: var(--sol-z-functional);
   width: var(--sol-nav-width);
   flex-shrink: 0;
+  /* Lâmina flutuante: margem e raio deixam a borda refrativa e o especular visíveis. */
+  margin: var(--sol-space-2);
+  border-radius: var(--sol-radius-xl);
+  border: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
+  box-shadow: var(--sol-elev-3), var(--sol-depth-inset);
   display: flex;
   flex-direction: column;
   gap: var(--sol-space-2);
   padding: var(--sol-space-6) var(--sol-space-3);
-  border-right: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
   overflow-x: hidden;
   overflow-y: auto;
   transition: width var(--sol-spring-smooth-dur) var(--sol-ease-spring-smooth);
