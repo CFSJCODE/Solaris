@@ -10,6 +10,7 @@ use crate::engine::EngineState;
 use crate::knowledge::{ContextSource, ProjectFile};
 use crate::project_memory::{MemoryFile, MemoryStore, MemoryUpdate};
 use crate::usage::{UsageLimits, UsageSummary};
+use crate::workspace::FolderEdit;
 
 static REQ_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -17,7 +18,7 @@ fn next_id() -> String {
     REQ_COUNTER.fetch_add(1, Ordering::Relaxed).to_string()
 }
 
-async fn engine_request(engine: EngineState, mut req: Value) -> Result<Value, String> {
+pub(crate) async fn engine_request(engine: EngineState, mut req: Value) -> Result<Value, String> {
     req["id"] = Value::String(next_id());
     let (tx, rx) = std::sync::mpsc::channel();
     engine.send(req, move |value| {
@@ -157,14 +158,34 @@ pub fn save_vision_sample(
 #[derive(Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ChatEvent {
-    Memory { sources: Vec<MemorySnippet> },
-    Context { sources: Vec<ContextSource> },
-    MemoryWarning { message: String },
-    Replace { text: String },
-    MemoryReport { report: Value },
-    Delta { text: String },
-    Done { usage: Value },
-    Error { message: String },
+    Memory {
+        sources: Vec<MemorySnippet>,
+    },
+    Context {
+        sources: Vec<ContextSource>,
+    },
+    MemoryWarning {
+        message: String,
+    },
+    Replace {
+        text: String,
+    },
+    MemoryReport {
+        report: Value,
+    },
+    EditProposals {
+        edits: Vec<FolderEdit>,
+        errors: Vec<String>,
+    },
+    Delta {
+        text: String,
+    },
+    Done {
+        usage: Value,
+    },
+    Error {
+        message: String,
+    },
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────
@@ -247,6 +268,15 @@ pub async fn chat_send(
                 .map_err(|e| e.to_string())?,
         );
     }
+    // Pastas locais: arquivos citados com @caminho entram inteiros; a busca completa o contexto.
+    let mentioned = crate::workspace::mentions(&message);
+    context_sources.extend(db.folder_context(
+        project_id,
+        &message,
+        &mentioned,
+        use_project_files.unwrap_or(true),
+    )?);
+    let folder_overview = db.folder_overview(project_id)?;
     let _ = on_event.send(ChatEvent::Context {
         sources: context_sources.clone(),
     });
@@ -310,6 +340,11 @@ pub async fn chat_send(
             "\n<referencia nome={:?} origem={:?}>\n{}\n</referencia>\n",
             source.filename, source.citation, source.content
         ));
+    }
+    if !folder_overview.is_empty() {
+        system_context.push('\n');
+        system_context.push_str(&folder_overview);
+        system_context.push_str("Os arquivos das pastas aparecem nas referências com origem \"pasta:ID:caminho\". O usuário pode citar um arquivo com @caminho para enviá-lo inteiro. Você não executa comandos nem lê arquivos fora do contexto fornecido; se precisar de um arquivo que não veio, peça ao usuário para citá-lo com @caminho. Quando o usuário pedir para criar ou alterar um arquivo dessas pastas, proponha o conteúdo COMPLETO do arquivo, sem abreviações, assim: <solaris_edit pasta=\"ID\" caminho=\"caminho/relativo.ext\">\nconteúdo completo\n</solaris_edit>. Use um bloco por arquivo (até 10). O SOLARIS mostra a diferença e só grava após aprovação explícita do usuário; portanto nunca afirme que o arquivo já foi alterado. Não proponha edições sem pedido.\n");
     }
     if memory_enabled.unwrap_or(true) && project_id.is_some() {
         system_context.push_str("\nAo concluir TODA resposta, acrescente um bloco de memória com o que for relevante desta conversa. Use o formato: <solaris_memory>{\"updates\":[{\"file\":\"MEMORY.md\",\"content\":\"contexto técnico, componentes, comandos, configurações, abordagens discutidas\"},{\"file\":\"DECISOES.md\",\"content\":\"decisão confirmada ou proposta, com origem\"}]}</solaris_memory>. Arquivos disponíveis: AGENTS.md (convenções, padrões do projeto), README.md (objetivo/estado atual), CONTRIBUTING.md (fluxo de trabalho), MEMORY.md (contexto técnico durável), DECISOES.md (decisões). Inclua sempre o bloco se a conversa trouxe qualquer contexto técnico novo — hardware, firmware, protocolos, erros resolvidos, configurações, bibliotecas, decisões de arquitetura, mesmo que provisórias. Se um arquivo tiver apenas texto genérico de placeholder (ex: 'Registre aqui convenções'), substitua pelo conteúdo real desta conversa. Omita arquivos sem atualização. Não repita registros idênticos já presentes. Nunca registre credenciais, API keys, dados sensíveis ou transcrições. O bloco é metadado interno e não aparece na resposta ao usuário.");
@@ -426,6 +461,22 @@ pub async fn chat_send(
         db_ref
             .save_sources(reply_id, &context_sources)
             .map_err(|e| e.to_string())?;
+        if !memory_required && err_msg.is_none() && full_reply.contains("<solaris_edit") {
+            let (visible, blocks) = crate::workspace::extract_edits(&full_reply);
+            let (edits, errors) =
+                db_ref.propose_edits(project_id, conversation_id, reply_id, &blocks);
+            let mut text = visible;
+            if !errors.is_empty() {
+                text.push_str(&format!(
+                    "\n\n> Propostas não registradas: {}",
+                    errors.join("; ")
+                ));
+            }
+            db_ref.replace_message_content(reply_id, &text)?;
+            full_reply = text.clone();
+            let _ = ch.send(ChatEvent::Replace { text });
+            let _ = ch.send(ChatEvent::EditProposals { edits, errors });
+        }
         let mut report = Value::Null;
         if memory_enabled.unwrap_or(true) && err_msg.is_none() && !memory_updates.is_empty() {
             if !memory_updates.iter().any(|u| u.file == "DECISOES.md") {

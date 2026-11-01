@@ -1,9 +1,11 @@
 mod commands;
 mod db;
 mod engine;
+mod folder_commands;
 mod knowledge;
 mod project_memory;
 mod usage;
+mod workspace;
 
 use std::path::PathBuf;
 use tauri::{Manager, RunEvent};
@@ -34,6 +36,9 @@ pub fn run() {
                 root: storage.join("memory"),
                 lock: std::sync::Mutex::new(()),
             });
+            app.manage(folder_commands::FolderBackups(
+                storage.join("folder-backups"),
+            ));
             let conn = db::open(&storage).expect("failed to open database");
             app.manage(db::DbState(std::sync::Mutex::new(conn)));
 
@@ -85,6 +90,16 @@ pub fn run() {
             commands::create_project,
             commands::rename_project,
             commands::delete_project,
+            folder_commands::folder_pick,
+            folder_commands::folder_attach,
+            folder_commands::folder_reindex,
+            folder_commands::folder_list,
+            folder_commands::folder_detach,
+            folder_commands::folder_set_enabled,
+            folder_commands::folder_files,
+            folder_commands::folder_read,
+            folder_commands::folder_edits,
+            folder_commands::folder_edit_decide,
             commands::usage_summary,
             commands::usage_set_limits,
         ])

@@ -2,6 +2,10 @@
 
 # Decisões do SOLARIS
 
+## 01/11/2026 — Pastas locais vinculadas aos projetos
+
+Permitir vincular pastas do computador a um projeto, no estilo de acesso a pastas do Claude: indexação local incremental (FTS5), contexto por busca e por menção `@caminho`, e propostas de edição que **só são gravadas após aprovação explícita** na interface, com detecção de conflito, backup da versão anterior e gravação atômica. Rust executa todo o acesso ao disco; o engine Python só extrai texto de PDF/DOCX. Segredos (.env, chaves), diretórios de dependências/build e executáveis/scripts do Windows ficam fora de leitura e escrita. O modelo não executa comandos. Implementado em código e testes; ainda não empacotado nem instalado. Ver docs/pastas-locais.md.
+
 ## 31/10/2026 — Nova classe humana como complemento isolado
 
 Não aprovar um detector completo quando a referência das classes existentes regredir: as avaliações da powerbank registraram quedas de 15,52 pontos no YOLO26s e 11,91 pontos no YOLO26x. Corrigir a divisão para que uma marcação nova que só apareça na sessão mais recente participe do treino. Para uma classe explicitamente marcada, permitir somente um complemento provisório quando os pesos mudarem e a caixa humana obtiver AP _in-sample_ ≥0,50. O complemento fornece apenas os IDs novos e mantém o detector anterior para as classes antigas; avisar que o teste não demonstra generalização. Promoção integral mantém os limites de avaliação e exige evidência independente em sessões diversas.

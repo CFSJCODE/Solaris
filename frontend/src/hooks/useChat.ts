@@ -46,6 +46,7 @@ type ChatEvent =
   | { type: "replace"; text: string }
   | { type: "memory_report"; report: MemoryReport }
   | { type: "delta"; text: string }
+  | { type: "edit_proposals"; edits: unknown[]; errors: string[] }
   | {
       type: "done"
       usage: {
@@ -63,6 +64,7 @@ export function useChat(projectId: number | null, memoryEnabled: boolean) {
   const [memorySaved, setMemorySaved] = useState<string[]>([])
   const [memoryWarning, setMemoryWarning] = useState("")
   const [memorySources, setMemorySources] = useState<MemorySource[]>([])
+  const [editsVersion, setEditsVersion] = useState(0)
   const requestVersion = useRef(0)
   const sending = useRef(false)
   const [error, setError] = useState<string | null>(null)
@@ -195,6 +197,8 @@ export function useChat(projectId: number | null, memoryEnabled: boolean) {
                 i === prev.length - 1 ? { ...m, memoryReport: event.report } : m,
               ),
             )
+          } else if (event.type === "edit_proposals") {
+            setEditsVersion((v) => v + 1)
           } else if (event.type === "context") {
             runSources = event.sources
             setContextSources(event.sources)
@@ -287,6 +291,7 @@ export function useChat(projectId: number | null, memoryEnabled: boolean) {
   )
 
   return {
+    editsVersion,
     error,
     memorySources,
     contextSources,

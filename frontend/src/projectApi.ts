@@ -26,7 +26,7 @@ export interface MemoryFile {
   revision: string
 }
 export interface ContextSource {
-  kind: "file" | "memory" | "environment"
+  kind: "file" | "memory" | "environment" | "folder"
   document_id: number | null
   filename: string
   citation: string
@@ -66,4 +66,77 @@ export function formatDate(value: string): string {
   return Number.isNaN(date.getTime())
     ? ""
     : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+}
+
+// ── Pastas locais ───────────────────────────────────────────────────────────
+
+export interface ProjectFolder {
+  id: number
+  project_id: number
+  path: string
+  label: string
+  enabled: boolean
+  file_count: number
+  indexed_count: number
+  skipped_count: number
+  truncated: boolean
+  last_indexed_at: string | null
+  created_at: string
+}
+export interface FolderFile {
+  folder_id: number
+  rel_path: string
+  kind: "text" | "pdf" | "docx"
+  byte_size: number
+  indexed: boolean
+  note: string
+}
+export interface FolderEdit {
+  id: number
+  project_id: number
+  folder_id: number
+  folder_label: string
+  rel_path: string
+  original: string | null
+  proposed: string
+  status: "pending" | "applied" | "rejected" | "conflict" | "failed" | "superseded"
+  detail: string
+  conversation_id: number | null
+  message_id: number | null
+  created_at: string
+  decided_at: string | null
+}
+export interface IndexReport {
+  folder: ProjectFolder
+  added: number
+  updated: number
+  removed: number
+  unchanged: number
+  unreadable: number
+  skipped: number
+  truncated: boolean
+}
+
+export function describeIndex(report: IndexReport): string {
+  const parts = [
+    `${report.folder.indexed_count} de ${report.folder.file_count} arquivos com conteúdo indexado`,
+  ]
+  if (report.added) parts.push(`${report.added} novos`)
+  if (report.updated) parts.push(`${report.updated} atualizados`)
+  if (report.removed) parts.push(`${report.removed} removidos`)
+  if (report.unreadable) parts.push(`${report.unreadable} sem texto legível`)
+  if (report.truncated) parts.push("lista limitada a 4.000 arquivos")
+  return `${report.folder.label}: ${parts.join(" · ")}.`
+}
+
+/** Abre o seletor nativo e vincula a pasta escolhida; `null` quando o usuário cancela. */
+export async function attachFolder(projectId: number): Promise<IndexReport | null> {
+  const path = await invoke<string | null>("folder_pick")
+  if (!path) return null
+  return invoke<IndexReport>("folder_attach", { projectId, path })
+}
+
+/** Menção inserida no chat para enviar um arquivo inteiro como contexto. */
+export function mentionFor(relPath: string): string {
+  return /\s/.test(relPath) ? `@"${relPath}"` : `@${relPath}`
 }
