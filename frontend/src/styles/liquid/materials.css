@@ -1,0 +1,201 @@
+/* SOLARIS · Materiais
+   Fluent UI 2  →  Solid · Mica · Acrylic · Smoke
+   Liquid Glass →  translucidez, refração (lente SVG), especular, profundidade
+
+   Camadas (Fluent hierarchy):
+     L1 Content Layer         .sol-solid / superfícies existentes (cards, tabelas, formulários)
+     L2 Functional Glass      .sol-glass--regular|clear (sidebar, topbar, composer)
+     L3 Overlay Layer         .sol-glass--acrylic + .sol-smoke (menus, popovers, diálogos)
+
+   Tiers (data-material no <html>, ver src/design/materialTier.ts):
+     liquid  blur + lente + especular        glass  blur + especular        solid  opaco */
+
+/* ── L0 · Mica: canvas com brilho ambiente das cores originais ─────────── */
+.sol-mica {
+  background:
+    radial-gradient(
+      120% 80% at 0% 0%,
+      color-mix(in srgb, var(--sol-ember) var(--sol-mica-ember), transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      90% 70% at 100% 100%,
+      color-mix(in srgb, var(--sol-gold) var(--sol-mica-gold), transparent),
+      transparent 55%
+    ),
+    var(--sol-bg);
+}
+
+/* ── L1 · Solid: superfícies de alta densidade informacional ───────────── */
+.sol-solid {
+  background: var(--sol-surface);
+  border: var(--sol-stroke-hairline) solid var(--sol-a11y-border);
+  box-shadow: var(--sol-elev-1), var(--sol-depth-inset);
+}
+
+/* ── L2 · Structural (tonal estável, sem blur) ─────────────────────────── */
+.sol-structural {
+  background: color-mix(in srgb, var(--sol-surface) var(--sol-structural-mix), transparent);
+  border-color: var(--sol-a11y-border);
+}
+
+/* ── L2/L3 · Liquid Glass ──────────────────────────────────────────────── */
+.sol-glass {
+  --sol-glass-mix: var(--sol-glass-mix-regular);
+  --sol-glass-blur: var(--sol-glass-blur-regular);
+  position: relative;
+  isolation: isolate;
+  color: var(--sol-text);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sol-specular) var(--sol-specular-sheen), transparent),
+      transparent 42%
+    ),
+    color-mix(
+      in srgb,
+      var(--sol-glass-base) max(var(--sol-glass-mix), var(--sol-a11y-glass-floor)),
+      transparent
+    );
+  -webkit-backdrop-filter: blur(var(--sol-glass-blur)) brightness(var(--sol-glass-tone))
+    saturate(var(--sol-glass-saturate));
+  backdrop-filter: blur(var(--sol-glass-blur)) brightness(var(--sol-glass-tone))
+    saturate(var(--sol-glass-saturate));
+  box-shadow: var(--sol-depth-inset);
+}
+.sol-glass--clear {
+  --sol-glass-mix: var(--sol-glass-mix-clear);
+  --sol-glass-blur: var(--sol-glass-blur-clear);
+}
+.sol-glass--acrylic {
+  --sol-glass-mix: var(--sol-glass-mix-acrylic);
+  --sol-glass-blur: var(--sol-glass-blur-acrylic);
+  box-shadow: var(--sol-elev-4), var(--sol-depth-inset);
+}
+
+/* Refração: lente SVG (feDisplacementMap) aplicada ao fundo amostrado.
+   A ordem blur → lente → saturate desfoca o conteúdo e curva a imagem nas
+   bordas, mantendo o centro estável e legível. */
+[data-material="liquid"] .sol-glass--refract {
+  --sol-glass-blur: var(--sol-glass-blur-refract);
+  --sol-glass-mix: var(--sol-glass-mix-refract);
+  -webkit-backdrop-filter: blur(var(--sol-glass-blur)) var(--sol-lens)
+    brightness(var(--sol-glass-tone)) saturate(var(--sol-glass-saturate));
+  backdrop-filter: blur(var(--sol-glass-blur)) var(--sol-lens) brightness(var(--sol-glass-tone))
+    saturate(var(--sol-glass-saturate));
+}
+
+/* Especular de contorno: máscara calculada pela normal da borda (lensMap.ts),
+   colorida com o token existente --sol-specular. Substitui o aro em gradiente. */
+.sol-glass--mapped::before {
+  padding: 0;
+  background: var(--sol-specular);
+  opacity: var(--sol-specular-strength);
+  -webkit-mask: var(--sol-specular-map) 0 0 / 100% 100% no-repeat;
+  -webkit-mask-composite: source-over;
+  mask: var(--sol-specular-map) 0 0 / 100% 100% no-repeat;
+  mask-composite: add;
+}
+
+/* Specular rim: borda luminosa com direção de luz coerente (topo → base). */
+.sol-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: var(--sol-stroke-hairline);
+  background: linear-gradient(
+    var(--sol-light-angle),
+    color-mix(in srgb, var(--sol-specular) var(--sol-specular-rim), transparent) 0%,
+    color-mix(in srgb, var(--sol-specular) var(--sol-specular-rim-low), transparent) 38%,
+    transparent 62%,
+    color-mix(in srgb, var(--sol-specular) var(--sol-specular-rim-low), transparent) 100%
+  );
+  -webkit-mask:
+    linear-gradient(black, black) content-box,
+    linear-gradient(black, black);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(black, black) content-box,
+    linear-gradient(black, black);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Interactive lighting: highlight segue o ponteiro (MaterialProvider). */
+.sol-lit {
+  --sol-light-x: 50%;
+  --sol-light-y: -40%;
+}
+.sol-glass::after,
+.btn-primary::after,
+.sol-btn-accent::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle var(--sol-specular-radius) at var(--sol-light-x, 50%) var(--sol-light-y, -40%),
+    color-mix(in srgb, var(--sol-specular) var(--sol-specular-pointer), transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity var(--sol-dur-state) var(--sol-ease-out);
+  pointer-events: none;
+}
+[data-lit]::after {
+  opacity: 1;
+}
+
+.sol-lens-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ── L3 · Smoke ────────────────────────────────────────────────────────── */
+.sol-smoke,
+dialog::backdrop {
+  background: var(--sol-smoke);
+}
+
+/* ── Tiers de renderização ─────────────────────────────────────────────── */
+[data-material="solid"] .sol-glass {
+  background: var(--sol-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-material="solid"] .sol-glass::after,
+[data-material="solid"] .btn-primary::after,
+[data-material="solid"] .sol-btn-accent::after {
+  display: none;
+}
+[data-material="solid"] .sol-structural {
+  background: var(--sol-surface);
+}
+
+@media (forced-colors: active) {
+  .sol-mica {
+    background: Canvas;
+  }
+  .sol-glass,
+  .sol-structural,
+  .sol-solid {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  .sol-glass::before,
+  .sol-glass::after,
+  .btn-primary::after,
+  .sol-btn-accent::after {
+    display: none;
+  }
+}
