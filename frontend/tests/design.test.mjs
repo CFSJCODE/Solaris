@@ -6,11 +6,7 @@ import { buildLensPixels, rimSlope, roundedRectSdf } from "../src/design/lensMap
 import { resolveTier } from "../src/design/materialTier.ts"
 import { ELASTIC, SpringValue } from "../src/design/springAnimator.ts"
 import { lightAngle } from "../src/design/lightField.ts"
-import {
-  FRAGMENT_SHADER,
-  PLATEAU_SPECULAR_MAX,
-  SCENE_WEIGHTS,
-} from "../src/design/webgl/glassShader.ts"
+import { FRAGMENT_SHADER, PLATEAU_SPECULAR_MAX } from "../src/design/webgl/glassShader.ts"
 
 const css = (p) => readFileSync(new URL(p, import.meta.url), "utf8")
 const solaris = css("../src/styles/solaris.css")
@@ -214,7 +210,7 @@ test("specular angle points from the surface toward the light", () => {
 })
 
 test("WebGL shader takes every colour from uniforms (no colours of its own)", () => {
-  for (const u of ["uBg", "uEmber", "uFlare", "uGold", "uGlow", "uTint"]) {
+  for (const u of ["uBg", "uEmber", "uGold", "uGlow", "uTint"]) {
     assert.match(FRAGMENT_SHADER, new RegExp(`uniform vec3 ${u};`))
   }
   // Only direction/position vectors may be literal vec3s.
@@ -224,21 +220,21 @@ test("WebGL shader takes every colour from uniforms (no colours of its own)", ()
   }
 })
 
+test("WebGL scene is only the Mica background (no added texture)", () => {
+  assert.doesNotMatch(FRAGMENT_SHADER, /noise|silk|sin\(|uFlare/)
+})
+
 test("text on WebGL glass keeps AA contrast over the brightest scene", () => {
   const percent = (name, theme) =>
     Number([...liquid[0].matchAll(new RegExp(`${name}:\\s*([\\d.]+)%?;`, "g"))][theme][1])
-  for (const [theme, base, texts, gainTheme] of [
-    [0, "#0b0d12", ["#f9f8f6", "#c1c4cb"], 0],
-    [1, "#fffcf8", ["#20170f", "#625e59"], 1],
+  for (const [theme, base, texts] of [
+    [0, "#0b0d12", ["#f9f8f6", "#c1c4cb"]],
+    [1, "#fffcf8", ["#20170f", "#625e59"]],
   ]) {
-    const gain = theme ? percent("--sol-scene-gain", 1) : percent("--sol-scene-gain", 0)
-    // Upper bound: every light field at its peak at the same pixel.
-    let scene = hex(base)
-    scene = mix(hex("#ea6113"), scene, SCENE_WEIGHTS.ember * gain)
-    scene = mix(hex("#fbb931"), scene, SCENE_WEIGHTS.gold * gain)
-    scene = mix(hex("#f88f22"), scene, SCENE_WEIGHTS.flare * gain)
+    // Upper bound: both Mica glows at their peak on the same pixel.
+    let scene = mix(hex("#fbb931"), hex(base), percent("--sol-mica-gold", theme) / 100)
+    scene = mix(hex("#ea6113"), scene, percent("--sol-mica-ember", theme) / 100)
     const specular = theme ? hex(base) : hex("#ffe3b3")
-    scene = mix(specular, scene, SCENE_WEIGHTS.silk * gain)
     const tone = percent("--sol-glass-tone-webgl", theme)
     const tint = theme ? hex("#fffcf8") : hex("#11141b")
     let glass = mix(

@@ -198,14 +198,14 @@ estático, fundo liso, barra superior não fixa e ausência de WebGL/GLSL/físic
 | Refração só no aro de 18–22 px  | Shader: cúpula squircle sobre a superfície inteira, normal por diferenças finitas, raio refratado por Snell (`refract`, n = 1,5, espessura 56 px). Lente SVG também passou a cúpula inteira (`bezel="auto"`).                                                                                                               |
 | Sem dispersão                   | Um raio por canal: n = 1,488 / 1,5 / 1,512 (R/G/B).                                                                                                                                                                                                                                                                         |
 | Especular estático              | `lightField.ts`: luz única a 420 px acima da tela, movida pelo ponteiro (`pointermove`) ou pelo giroscópio (`deviceorientation`, ±45°). No WebGL: Fresnel de Schlick + Blinn-Phong (expoente 120) voltado para a luz; no DOM: gradiente cônico girando para `--sol-light-rot`.                                              |
-| Fundo quase liso                | Cena L0 no shader: campos de luz das cores originais (ember, gold, flare) e uma textura "seda" em glow (ruído de valor + cristas). É o que o vidro refrata.                                                                                                                                                                 |
+| Fundo quase liso                | Revertido em 01/11/2026 por decisão do responsável: a textura ondulada e o campo extra foram removidos. A cena WebGL reproduz exatamente o fundo Mica anterior (`--sol-bg` com os brilhos radiais ember e gold de `--sol-mica-*`).                                                                                          |
 | Barra superior não fixa         | Além da topbar do chat, a barra de busca de Projetos e as abas do projeto viraram barras fixas de vidro refrativo (`.sol-sticky-bar`), com tinta adaptativa à rolagem.                                                                                                                                                      |
 | Sem física de mola / deformação | `springAnimator.ts`: oscilador amortecido (semi-implícito, subpassos de 1/240 s, k = 620, c = 31, ζ ≈ 0,62, um rebote de ~8 %). Pressionar botões deforma com preservação de volume (`scale` x+2,5 %, y−4,5 %); a lâmina WebGL achata ao pressionar e oscila ao recolher/expandir; pressionar o composer aprofunda a lente. |
 
 Decisões:
 
 - **Cores**: o shader não tem cores próprias. Todas chegam como uniforms lidos dos tokens CSS
-  (`--sol-bg`, `--sol-ember`, `--sol-flare`, `--sol-gold`, `--sol-specular`, `--sol-glass-base`), e o
+  (`--sol-bg`, `--sol-ember`, `--sol-gold`, `--sol-mica-*`, `--sol-specular`, `--sol-glass-base`), e o
   teste falha se aparecer um `vec3` literal que não seja direção.
 - **Contraste**: como a cena WebGL é conhecida, o vidro WebGL usa tom 0,8 e tinta de 22 % (contra 0,5 e
   40 % no vidro SVG). O teste soma o pior caso (todos os campos no pico no mesmo pixel + especular do
