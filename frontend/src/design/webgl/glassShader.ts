@@ -65,10 +65,15 @@ vec3 scene(vec2 p) {
 
 float squircle(float u) { return pow(1.0 - pow(1.0 - clamp(u, 0.0, 1.0), 4.0), 0.25); }
 
-// Height of the slab at p (0 outside, up to 1 on the plateau).
+// Crease-free height of the slab at p (0 outside, 1 on the plateau); same
+// field as domeHeight() in lensMap.ts. A dome on the raw SDF creases along
+// the diagonals from the corners, which showed as a diagonal seam.
 float heightAt(vec2 p, vec2 c, vec2 hs, float r, float dome) {
-  float d = sdRoundRect(p - c, hs, r);
-  return d < 0.0 ? squircle(-d / dome) : 0.0;
+  vec2 lp = p - c;
+  float depth = -sdRoundRect(lp, hs, r);
+  if (depth <= 0.0) return 0.0;
+  vec2 edge = hs - abs(lp);
+  return squircle(edge.x / dome) * squircle(edge.y / dome) * squircle(depth / max(r, 1.0));
 }
 
 void main() {

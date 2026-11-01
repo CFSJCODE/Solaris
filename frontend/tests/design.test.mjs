@@ -2,7 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { SPRINGS, springOvershoot, springSettleTime, springToLinear } from "../src/design/spring.ts"
-import { buildLensPixels, rimSlope, roundedRectSdf } from "../src/design/lensMap.ts"
+import { buildLensPixels, domeHeight, rimSlope, roundedRectSdf } from "../src/design/lensMap.ts"
 import { resolveTier } from "../src/design/materialTier.ts"
 import { ELASTIC, SpringValue } from "../src/design/springAnimator.ts"
 import { lightAngle } from "../src/design/lightField.ts"
@@ -100,6 +100,24 @@ test("lens map leaves the centre undisplaced and pulls the rim inward", () => {
   const [, gTop] = px(100, 2)
   assert.ok(gTop > 160, "top rim samples toward +y")
   assert.equal(height, 80)
+})
+
+test("full-surface dome has no diagonal crease (smooth across the medial axis)", () => {
+  // Navigation slab: 260 × 880, radius 24, dome over half the short side.
+  const g = { width: 260, height: 880, radius: 24, bezel: 130 }
+  let worst = 0
+  // Walk across the 45° medial axis from the top-left corner at several depths.
+  for (const t of [40, 60, 90, 110]) {
+    for (let k = -6; k <= 6; k++) {
+      const x = t + k
+      const y = t - k
+      const c = domeHeight(x, y, g)
+      const curvature = Math.abs(domeHeight(x + 1, y, g) - 2 * c + domeHeight(x - 1, y, g))
+      worst = Math.max(worst, curvature)
+    }
+  }
+  assert.ok(worst < 2e-3, `second difference ${worst}`)
+  assert.equal(domeHeight(130, 440, g), 1, "flat plateau in the centre")
 })
 
 // ── 6. Accessibility: tier resolution ─────────────────────────────────────

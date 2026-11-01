@@ -89,19 +89,44 @@ export function snellLut(n = REFRACTIVE_INDEX, size = LUT_SIZE): Float32Array {
   return lut
 }
 
-const LUT = snellLut()
-
-function lutAt(u: number): number {
-  const x = Math.min(1, Math.max(0, u)) * (LUT.length - 1)
-  const i = Math.floor(x)
-  const f = x - i
-  return i + 1 < LUT.length ? LUT[i] * (1 - f) + LUT[i + 1] * f : LUT[i]
+/**
+ * Crease-free height of the glass slab at (x, y), in [0, 1].
+ *
+ * A dome built directly on the rounded-rect SDF has a crease along the
+ * medial axis (the diagonals from the corners: there max(q.x, q.y) switches
+ * branch and ∇sdf jumps). Once the dome is deeper than the corner radius
+ * that crease shows as a diagonal seam in the refraction and specular.
+ * Instead the height is a product of smooth factors, each of which depends
+ * on one distance only and has zero slope where it saturates:
+ *
+ *   H = h(ex / b) · h(ey / b) · h(depth / r)
+ *
+ * ex, ey = distance to the nearest vertical / horizontal edge, depth = −sdf
+ * (only used within the corner radius r, where the SDF is still smooth).
+ */
+export function domeHeight(x: number, y: number, geometry: LensGeometry): number {
+  const depth = -roundedRectSdf(x, y, geometry)
+  if (depth <= 0) return 0
+  const hx = geometry.width / 2
+  const hy = geometry.height / 2
+  const r = Math.max(1, Math.min(geometry.radius, hx, hy))
+  const b = Math.max(1, geometry.bezel)
+  const ex = hx - Math.abs(x - hx)
+  const ey = hy - Math.abs(y - hy)
+  return squircleHeight(ex / b) * squircleHeight(ey / b) * squircleHeight(depth / r)
 }
+
+/** Largest Snell shift (rim, θ → 90°), used to normalise the map to [-1, 1]. */
+const MAX_SHIFT = THICKNESS * Math.tan(Math.PI / 2 - Math.asin(1 / REFRACTIVE_INDEX))
 
 /**
  * Build RGBA pixels for the displacement map. `scale` < 1 renders a smaller
  * map that the SVG filter stretches back, which keeps CPU cost proportional
  * to the visible rim instead of the whole surface.
+ *
+ * The surface normal comes from the gradient of `domeHeight` (amplitude =
+ * bezel); a vertical ray refracts by δ = θ − asin(sin θ / n) and samples the
+ * background (t + H) · tan δ further inward, along +∇H.
  */
 export function buildLensPixels(
   geometry: LensGeometry,
@@ -115,21 +140,27 @@ export function buildLensPixels(
   const h = Math.max(2, Math.round(geometry.height * scale))
   const data = new Uint8ClampedArray(new ArrayBuffer(w * h * 4))
   const e = 0.75 // central-difference step, in source px
+  const b = Math.max(1, geometry.bezel)
   for (let j = 0; j < h; j++) {
     for (let i = 0; i < w; i++) {
       const x = (i + 0.5) / scale
       const y = (j + 0.5) / scale
-      const d = roundedRectSdf(x, y, geometry)
+      const height = domeHeight(x, y, geometry)
       let dx = 0
       let dy = 0
-      if (d < 0 && -d < geometry.bezel) {
-        const gx = roundedRectSdf(x + e, y, geometry) - roundedRectSdf(x - e, y, geometry)
-        const gy = roundedRectSdf(x, y + e, geometry) - roundedRectSdf(x, y - e, geometry)
-        const len = Math.hypot(gx, gy) || 1
-        const strength = lutAt(-d / geometry.bezel)
-        // Convex lens: sample toward the centre (−∇sdf), magnifying the rim.
-        dx = (-gx / len) * strength
-        dy = (-gy / len) * strength
+      if (height > 0) {
+        const gx = (domeHeight(x + e, y, geometry) - domeHeight(x - e, y, geometry)) / (2 * e)
+        const gy = (domeHeight(x, y + e, geometry) - domeHeight(x, y - e, geometry)) / (2 * e)
+        const len = Math.hypot(gx, gy)
+        if (len > 1e-6) {
+          const theta = Math.atan(len * b)
+          const shift =
+            (THICKNESS + height) * Math.tan(theta - Math.asin(Math.sin(theta) / REFRACTIVE_INDEX))
+          const strength = Math.min(1, shift / MAX_SHIFT)
+          // Convex lens: sample toward the centre (+∇H), magnifying the rim.
+          dx = (gx / len) * strength
+          dy = (gy / len) * strength
+        }
       }
       const k = (j * w + i) * 4
       data[k] = Math.round(128 + 127 * dx)
