@@ -1,13 +1,15 @@
 {
   "name": "solaris-frontend",
   "private": true,
-  "version": "0.5.7",
+  "version": "0.5.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test:annotations": "node --test tests/annotationGeometry.test.mjs",
+    "test:design": "node --test tests/design.test.mjs",
+    "test:diff": "node --test tests/lineDiff.test.mjs",
     "test:vision-ui": "playwright test",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier . --write",

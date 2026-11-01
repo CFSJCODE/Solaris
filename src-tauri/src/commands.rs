@@ -9,6 +9,8 @@ use crate::db::{Conversation, DbState, Document, MemorySnippet, Message, Project
 use crate::engine::EngineState;
 use crate::knowledge::{ContextSource, ProjectFile};
 use crate::project_memory::{MemoryFile, MemoryStore, MemoryUpdate};
+use crate::usage::{UsageLimits, UsageSummary};
+use crate::workspace::FolderEdit;
 
 static REQ_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -16,7 +18,7 @@ fn next_id() -> String {
     REQ_COUNTER.fetch_add(1, Ordering::Relaxed).to_string()
 }
 
-async fn engine_request(engine: EngineState, mut req: Value) -> Result<Value, String> {
+pub(crate) async fn engine_request(engine: EngineState, mut req: Value) -> Result<Value, String> {
     req["id"] = Value::String(next_id());
     let (tx, rx) = std::sync::mpsc::channel();
     engine.send(req, move |value| {
@@ -156,14 +158,34 @@ pub fn save_vision_sample(
 #[derive(Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ChatEvent {
-    Memory { sources: Vec<MemorySnippet> },
-    Context { sources: Vec<ContextSource> },
-    MemoryWarning { message: String },
-    Replace { text: String },
-    MemoryReport { report: Value },
-    Delta { text: String },
-    Done { usage: Value },
-    Error { message: String },
+    Memory {
+        sources: Vec<MemorySnippet>,
+    },
+    Context {
+        sources: Vec<ContextSource>,
+    },
+    MemoryWarning {
+        message: String,
+    },
+    Replace {
+        text: String,
+    },
+    MemoryReport {
+        report: Value,
+    },
+    EditProposals {
+        edits: Vec<FolderEdit>,
+        errors: Vec<String>,
+    },
+    Delta {
+        text: String,
+    },
+    Done {
+        usage: Value,
+    },
+    Error {
+        message: String,
+    },
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────
@@ -246,6 +268,15 @@ pub async fn chat_send(
                 .map_err(|e| e.to_string())?,
         );
     }
+    // Pastas locais: arquivos citados com @caminho entram inteiros; a busca completa o contexto.
+    let mentioned = crate::workspace::mentions(&message);
+    context_sources.extend(db.folder_context(
+        project_id,
+        &message,
+        &mentioned,
+        use_project_files.unwrap_or(true),
+    )?);
+    let folder_overview = db.folder_overview(project_id)?;
     let _ = on_event.send(ChatEvent::Context {
         sources: context_sources.clone(),
     });
@@ -318,6 +349,11 @@ pub async fn chat_send(
             source.filename, source.citation, source.content
         ));
     }
+    if !folder_overview.is_empty() {
+        system_context.push('\n');
+        system_context.push_str(&folder_overview);
+        system_context.push_str("Os arquivos das pastas aparecem nas referências com origem \"pasta:ID:caminho\". O usuário pode citar um arquivo com @caminho para enviá-lo inteiro. Você não executa comandos nem lê arquivos fora do contexto fornecido; se precisar de um arquivo que não veio, peça ao usuário para citá-lo com @caminho. Quando o usuário pedir para criar ou alterar um arquivo dessas pastas, proponha o conteúdo COMPLETO do arquivo, sem abreviações, assim: <solaris_edit pasta=\"ID\" caminho=\"caminho/relativo.ext\">\nconteúdo completo\n</solaris_edit>. Use um bloco por arquivo (até 10). O SOLARIS mostra a diferença e só grava após aprovação explícita do usuário; portanto nunca afirme que o arquivo já foi alterado. Não proponha edições sem pedido.\n");
+    }
     let req_id = next_id();
     let mut req = json!({
         "id": req_id,
@@ -346,6 +382,8 @@ pub async fn chat_send(
 
     let (tx, rx) = std::sync::mpsc::channel::<Value>();
 
+    // A extração automática de memória (fallback) reutiliza a lista após o envio.
+    let memory_files = req["memory_files"].clone();
     engine.send(req, move |val: Value| {
         let _ = tx.send(val);
     })?;
@@ -402,6 +440,8 @@ pub async fn chat_send(
         }
     }
 
+    record_usage(db_ref, conversation_id, &usage_val);
+
     // Persist assistant reply
     let mut full_reply = accumulated.lock().unwrap().clone();
     if memory_required {
@@ -424,6 +464,22 @@ pub async fn chat_send(
         db_ref
             .save_sources(reply_id, &context_sources)
             .map_err(|e| e.to_string())?;
+        if !memory_required && err_msg.is_none() && full_reply.contains("<solaris_edit") {
+            let (visible, blocks) = crate::workspace::extract_edits(&full_reply);
+            let (edits, errors) =
+                db_ref.propose_edits(project_id, conversation_id, reply_id, &blocks);
+            let mut text = visible;
+            if !errors.is_empty() {
+                text.push_str(&format!(
+                    "\n\n> Propostas não registradas: {}",
+                    errors.join("; ")
+                ));
+            }
+            db_ref.replace_message_content(reply_id, &text)?;
+            full_reply = text.clone();
+            let _ = ch.send(ChatEvent::Replace { text });
+            let _ = ch.send(ChatEvent::EditProposals { edits, errors });
+        }
         let mut report = Value::Null;
         if memory_enabled.unwrap_or(true) && err_msg.is_none() && !memory_updates.is_empty() {
             if !memory_updates.iter().any(|u| u.file == "DECISOES.md") {
@@ -504,18 +560,23 @@ pub async fn chat_send(
                 "messages": extract_messages,
                 "system": system_context_for_extract,
                 "memory_required": true,
-                "memory_files": req["memory_files"],
+                "memory_files": memory_files,
             });
             let (etx, erx) = std::sync::mpsc::channel::<Value>();
-            if engine.send(extract_req, move |val: Value| { let _ = etx.send(val); }).is_ok() {
+            if engine
+                .send(extract_req, move |val: Value| {
+                    let _ = etx.send(val);
+                })
+                .is_ok()
+            {
                 let mut extract_updates: Vec<MemoryUpdate> = Vec::new();
                 loop {
                     match erx.recv() {
                         Err(_) => break,
                         Ok(val) => match val["type"].as_str().unwrap_or("") {
                             "memory_updates" => {
-                                extract_updates =
-                                    serde_json::from_value(val["updates"].clone()).unwrap_or_default();
+                                extract_updates = serde_json::from_value(val["updates"].clone())
+                                    .unwrap_or_default();
                             }
                             "chat_done" | "chat_error" | "error" => break,
                             _ => {}
@@ -523,11 +584,15 @@ pub async fn chat_send(
                     }
                 }
                 if !extract_updates.is_empty() {
-                    if let Ok(files) = memory.record(project_id, conversation_id, reply_id, &extract_updates) {
+                    if let Ok(files) =
+                        memory.record(project_id, conversation_id, reply_id, &extract_updates)
+                    {
                         if !files.is_empty() {
                             let extract_report = json!({"state":"saved","files":files,"detail":"Memória gravada automaticamente após a resposta."});
                             let _ = db_ref.save_memory_report(reply_id, &extract_report, None);
-                            let _ = ch.send(ChatEvent::MemoryReport { report: extract_report });
+                            let _ = ch.send(ChatEvent::MemoryReport {
+                                report: extract_report,
+                            });
                         }
                     }
                 }
@@ -543,6 +608,46 @@ pub async fn chat_send(
 
     let _ = ch.send(ChatEvent::Done { usage: usage_val });
     Ok(())
+}
+
+/// Grava o consumo informado pelo engine. Falhas não interrompem o chat.
+fn record_usage(db: &DbState, conversation_id: i64, usage: &Value) {
+    let (Some(provider), Some(model)) = (usage["provider"].as_str(), usage["model"].as_str())
+    else {
+        return;
+    };
+    let tokens = |key: &str| usage[key].as_u64().unwrap_or(0);
+    if let Err(e) = db.record_usage(
+        Some(conversation_id),
+        provider,
+        model,
+        tokens("input_tokens"),
+        tokens("output_tokens"),
+        usage["cost_usd"].as_f64(),
+    ) {
+        eprintln!("[usage] falha ao registrar consumo: {e}");
+    }
+}
+
+// ── Usage ─────────────────────────────────────────────────────────────────
+
+/// `tz_offset_minutes`: minutos a leste de UTC (−180 em Brasília).
+#[tauri::command]
+pub fn usage_summary(
+    db: State<DbState>,
+    tz_offset_minutes: Option<i32>,
+) -> Result<UsageSummary, String> {
+    let offset = tz_offset_minutes.unwrap_or(0).clamp(-14 * 60, 14 * 60);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs() as i64;
+    db.usage_summary(now, offset).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn usage_set_limits(db: State<DbState>, limits: UsageLimits) -> Result<(), String> {
+    db.save_usage_limits(&limits)
 }
 
 // ── Projects ──────────────────────────────────────────────────────────────

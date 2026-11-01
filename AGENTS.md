@@ -62,6 +62,7 @@ runtime de aprendizado — PyTorch CPU, Ultralytics, OWLv2, avaliação/exporta�
 | src-tauri/src/db.rs, commands.rs, lib.rs                   | Persistência, comandos e registro IPC                       |
 | src-tauri/src/engine.rs                                    | Ciclo de vida do engine e pipes                             |
 | src-tauri/src/knowledge.rs e project_memory.rs             | Documentos/contexto e memória Markdown                      |
+| src-tauri/src/workspace.rs e folder_commands.rs            | Pastas locais: índice, @menções, edições aprovadas          |
 | python-engine/app/main.py                                  | Despacho do protocolo JSONL                                 |
 | python-engine/app/chat/memory_stream.py                    | Memória e respostas estruturadas                            |
 | python-engine/app/vision/detector.py e environment.py      | Inferência e estatísticas do ambiente                       |
@@ -125,7 +126,7 @@ A extensão de pesos/treino foi entregue na 0.5.0. Prioridade seguinte: acompanh
 - Build Windows: `./scripts/build.ps1`; empacota python-engine/engine.spec. Conferir beforeBuildCommand e diretório de trabalho Tauri antes de alterar caminhos.
 - Compilação já exigiu perfil rlib, otimização 1 e um job por memória. Não atribuir falhas automaticamente ao Defender nem ampliar exclusões sem diagnóstico.
 - Após pacote: verificar executável/engine, backup, integridade SQLite, memória, inicialização, câmera e versão ativa. Build aprovado não é instalação nem validação nativa.
-- Manter interface SOLARIS: tokens --sol-*, paleta Sunset, hierarquia tipográfica, espaçamento 4/8 px e identidade existente. Consultar DESIGN.md se houver e ../DESIGN_SYSTEM_SOLARIS.md; não redesenhar por conveniência.
+- Manter interface SOLARIS: tokens --sol-\*, paleta Sunset, hierarquia tipográfica, espaçamento 4/8 px e identidade existente. Consultar DESIGN.md se houver e ../DESIGN_SYSTEM_SOLARIS.md; não redesenhar por conveniência.
 - Antes de concluir, atualizar estes documentos com decisões, arquivos, evidências, limitações e próximos passos. Nunca copiar transcrição bruta ou saídas completas de ferramentas.
 
 ## 8. Memória compartilhada e comunicação

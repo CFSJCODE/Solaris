@@ -12,8 +12,22 @@ export default function Modal({
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const el = ref.current
-    el?.showModal()
-    return () => el?.close()
+    if (!el) return
+    // Contextual transition: the dialog grows from the control that opened it.
+    const opener = document.activeElement as HTMLElement | null
+    const from = opener && opener !== document.body ? opener.getBoundingClientRect() : null
+    el.showModal()
+    if (from) {
+      const box = el.getBoundingClientRect()
+      const x = from.left + from.width / 2 - box.left
+      const y = from.top + from.height / 2 - box.top
+      el.style.transformOrigin = `${Math.round(x)}px ${Math.round(y)}px`
+    }
+    return () => {
+      el.close()
+      // Return focus to the opener (Fluent dialog pattern).
+      if (opener && document.contains(opener)) opener.focus()
+    }
   }, [])
   return (
     <dialog

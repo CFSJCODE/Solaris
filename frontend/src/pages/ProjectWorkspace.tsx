@@ -10,7 +10,9 @@ import {
 } from "../projectApi"
 import { Conversation } from "../hooks/useChat"
 import MemoryPanel from "../components/MemoryPanel"
+import FolderPanel from "../components/FolderPanel"
 import Modal from "../components/Modal"
+import { LiquidSurface } from "../design/LiquidSurface"
 
 export default function ProjectWorkspace({
   project,
@@ -293,10 +295,17 @@ export default function ProjectWorkspace({
           </button>
         </div>
       </header>
-      <nav className="workspace-tabs" aria-label="Áreas do projeto">
+      <LiquidSurface
+        as="nav"
+        variant="clear"
+        refract
+        className="workspace-tabs sol-sticky-bar"
+        aria-label="Áreas do projeto"
+      >
         {[
           ["overview", "Visão geral"],
           ["files", "Arquivos"],
+          ["folders", "Pastas locais"],
           ["memory", "Memória e documentos"],
           ["instructions", "Instruções"],
         ].map(([key, label]) => (
@@ -309,7 +318,7 @@ export default function ProjectWorkspace({
             {label}
           </button>
         ))}
-      </nav>
+      </LiquidSurface>
       {error && (
         <p role="alert" className="workspace-error">
           {error}
@@ -372,6 +381,7 @@ export default function ProjectWorkspace({
           </section>
           <aside className="project-context-column">
             {fileLibrary(true)}
+            <FolderPanel projectId={project.id} compact onOpenTab={() => setTab("folders")} />
             <section className="workspace-panel">
               <div className="workspace-section-heading">
                 <h2>Memória viva</h2>
@@ -400,6 +410,7 @@ export default function ProjectWorkspace({
         </div>
       )}
       {tab === "files" && fileLibrary()}
+      {tab === "folders" && <FolderPanel projectId={project.id} />}
       {tab === "memory" && <MemoryPanel projectId={project.id} />}
       {tab === "instructions" && (
         <section className="workspace-settings">

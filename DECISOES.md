@@ -1,6 +1,10 @@
-> **Estado vigente — 31/10/2026: SOLARIS 0.5.3 instalada.** Vocabulário contextual ampliado e admissão de treino sem mínimo de RAM. Consulte [AGENTS.md](AGENTS.md), [ciclo atual](docs/aprendizado-autonomo.md) e [validação da entrega](docs/entrega-0.5.0.md). Registros de versões anteriores abaixo são históricos. Não há melhora real de precisão comprovada no ambiente do usuário.
+> **Estado vigente — 01/11/2026: SOLARIS 0.5.8 instalada** (Liquid Glass + Fluent UI 2, paleta preservada; validação visual nativa pendente). Desde a 0.5.3: vocabulário contextual ampliado e admissão de treino sem mínimo de RAM. Consulte [AGENTS.md](AGENTS.md), [ciclo atual](docs/aprendizado-autonomo.md) e [validação da entrega](docs/entrega-0.5.0.md). Registros de versões anteriores abaixo são históricos. Não há melhora real de precisão comprovada no ambiente do usuário.
 
 # Decisões do SOLARIS
+
+## 01/11/2026 — Pastas locais vinculadas aos projetos
+
+Permitir vincular pastas do computador a um projeto, no estilo de acesso a pastas do Claude: indexação local incremental (FTS5), contexto por busca e por menção `@caminho`, e propostas de edição que **só são gravadas após aprovação explícita** na interface, com detecção de conflito, backup da versão anterior e gravação atômica. Rust executa todo o acesso ao disco; o engine Python só extrai texto de PDF/DOCX. Segredos (.env, chaves), diretórios de dependências/build e executáveis/scripts do Windows ficam fora de leitura e escrita. O modelo não executa comandos. Implementado em código e testes; ainda não empacotado nem instalado. Ver docs/pastas-locais.md.
 
 ## 31/10/2026 — Nova classe humana como complemento isolado
 
@@ -83,3 +87,24 @@ O compilador Rust relatou falta de memória com o perfil anterior. A configuraç
 Autorização explícita: implementar as tecnologias propostas sem seleção ou aprovação humana obrigatória durante o uso. Treinar sempre YOLO26x; permitir detector ao vivo menor. Usar processo CPU separado para dependências pesadas, preservar modelo original e versão anterior, avaliar antes de ativar. Coleta local limitada e transparente. OWLv2 investiga vocabulário adicional definido; não alegar descoberta semântica irrestrita. A avaliação local de rótulos automáticos é uma medida substituta. Reversão inicial cobre falhas de ativação, sem alegação de monitoramento independente da precisão real.
 
 Entrega: versão 0.4.0 instalada e reaberta, dados anteriores preservados. Seleção inicial YOLO26s no vídeo; YOLO26x original residente. YOLO26x é o único alvo de treino, com parte da rede congelada inicialmente. Para mala/bolsa/mochila, exigir concordância também do OWLv2 antes de usar o rótulo. Retenção preserva ativa/anterior e checkpoints recuperáveis, limpando somente artefatos gerados. 32 testes unitários aprovados e testes reais de treino, expansão de catálogo, checkpoint, exportação e integração no engine instalado. Candidata do ensaio reprovada pelo critério de ganho, não ativada. Navegação visual final bloqueada pelo Windows; janela aberta e dados visíveis, sem validação da webcam real nesta atualização.
+
+## 01/11/2026 — Liquid Glass + Fluent UI 2 na interface
+
+Diretriz do responsável: modernizar materiais, profundidade, iluminação e movimento com princípios do Apple Liquid Glass e do Fluent UI 2, **sem alterar a paleta**. Implementado em camadas de tokens separadas (`frontend/src/styles/liquid/`), com `solaris.css` intacto e teste que falha se qualquer cor original mudar ou se surgir literal de cor novo. Refração real por lente SVG (SDF + `feDisplacementMap` em `backdrop-filter`) somente na topbar e no composer do chat; tiers `liquid`/`glass`/`solid` automáticos e ajustáveis pelo usuário. Conflitos de cor e tokens indefinidos (`--sol-accent`) registrados em `docs/design/liquid-glass-fluent.md` §7 para decisão humana, sem alteração automática.
+
+Complemento (01/11/2026): `--sol-accent` passa a ser alias de `--sol-gold`, por decisão do responsável ("manter as cores originais"). O vidro foi reforçado após a avaliação de que parecia "apenas degradê": lente por Snell (n = 1,5), especular de contorno, tom multiplicativo no fundo com tinta menor, e navegação como lâmina flutuante refrativa.
+
+Limitações resolvidas (01/11/2026, a pedido do responsável): cena WebGL2 com GLSL próprio desenha o fundo
+e a lâmina de navegação com refração em toda a superfície, dispersão por canal, Fresnel e especular que
+segue ponteiro ou giroscópio; lente SVG passou a cúpula inteira; barras fixas de vidro também em
+Projetos; molas físicas em runtime para deformação ao pressionar. Shader sem cores próprias (tokens via
+uniforms) e contraste testado no pior caso. WebGPU avaliado e não adotado. Detalhes no §11 do documento
+de design.
+
+## 01/11/2026 — Release 0.5.8 instalada
+
+Versão 0.5.7 → 0.5.8 para entregar o Liquid Glass + Fluent UI 2 (PR #30) aprovado pelo responsável. MSI gerado por `scripts/build.ps1` e instalado com backup verificável antes; engine instalado idêntico ao compilado, bancos e Markdown preservados. A conferência visual na janela nativa e a medição de CPU/GPU na rolagem ficaram pendentes porque o acesso de controle à janela foi negado nesta sessão. Detalhes em `docs/entrega-0.5.0.md`, seção "Atualização 0.5.8 instalada".
+
+## 01/11/2026 — Painel de métricas de uso
+
+Pedido do responsável: métricas de uso equivalentes às do painel “Seu uso” do Claude. Implementado: cada resposta concluída grava um evento em `usage_events` (SQLite, sem chave estrangeira para preservar o histórico após exclusões) com provedor, modelo, tokens de entrada/saída e custo. Janelas: sessão deslizante (padrão 5 h, inicia na primeira mensagem após a anterior expirar), semana com reinício em dia/hora local configuráveis (padrão sábado 12:00) e limite por modelo como fração do limite semanal. Limites são orçamentos definidos pelo usuário, não cotas dos provedores; ainda não bloqueiam envios nem alteram o roteamento. Custo desconhecido é registrado como nulo (não zero) e o OpenRouter passa a informar o custo real quando disponível. Eventos anteriores a esta versão não existem; o uso começa a contar após a atualização.
