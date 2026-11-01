@@ -1701,3 +1701,105 @@ textarea.workspace-input {
   color: var(--sol-text-muted);
   background: color-mix(in srgb, var(--sol-text) 4%, transparent);
 }
+
+/* ── Uso (métricas de sessão, semana e modelo) ── */
+.sol-usage-page {
+  gap: var(--sol-space-6);
+  max-width: 960px;
+}
+.sol-usage-headline {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sol-text);
+}
+.sol-usage-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr) 168px;
+  align-items: center;
+  gap: var(--sol-space-4);
+  padding: var(--sol-space-4) 0;
+  border-top: var(--sol-stroke-hairline, 1px) solid var(--sol-border);
+}
+.sol-usage-meta,
+.sol-usage-value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sol-usage-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.sol-usage-label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sol-usage-detail {
+  font-size: 12px;
+  color: var(--sol-text-muted);
+}
+.sol-usage-subhead {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sol-text-muted);
+  margin-top: var(--sol-space-4);
+  margin-bottom: var(--sol-space-1);
+}
+.sol-usage-bar[data-tone="session"] .sol-progress-fill {
+  background: var(--sol-gold);
+}
+.sol-usage-bar[data-tone="week"] .sol-progress-fill {
+  background: var(--sol-sunset);
+  background-size: 100% 100%;
+}
+.sol-usage-bar[data-tone="model"] .sol-progress-fill {
+  background: var(--sol-flare);
+}
+.sol-usage-bar[data-tone="budget"] .sol-progress-fill {
+  background: var(--sol-glow);
+}
+.sol-usage-bar[data-level="high"] .sol-progress-fill {
+  background: var(--sol-ember);
+}
+.sol-usage-bar[data-level="over"] .sol-progress-fill {
+  background: var(--sol-error);
+}
+.sol-usage-note {
+  margin-top: var(--sol-space-4);
+}
+.sol-usage-limits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sol-space-3);
+}
+.sol-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sol-space-4);
+}
+.sol-usage-model-limit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px auto;
+  gap: var(--sol-space-2);
+  align-items: center;
+}
+.sol-usage-model-limit .project-input {
+  width: 100%;
+  min-width: 0;
+}
+.sol-usage-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sol-space-2);
+  flex-wrap: wrap;
+}
+@media (max-width: 720px) {
+  .sol-usage-row {
+    grid-template-columns: 1fr;
+    gap: var(--sol-space-2);
+  }
+  .sol-usage-value {
+    text-align: left;
+  }
+}

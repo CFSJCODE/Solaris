@@ -9,6 +9,7 @@ use crate::db::{Conversation, DbState, Document, MemorySnippet, Message, Project
 use crate::engine::EngineState;
 use crate::knowledge::{ContextSource, ProjectFile};
 use crate::project_memory::{MemoryFile, MemoryStore, MemoryUpdate};
+use crate::usage::{UsageLimits, UsageSummary};
 use crate::workspace::FolderEdit;
 
 static REQ_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -436,6 +437,8 @@ pub async fn chat_send(
         }
     }
 
+    record_usage(db_ref, conversation_id, &usage_val);
+
     // Persist assistant reply
     let mut full_reply = accumulated.lock().unwrap().clone();
     if memory_required {
@@ -543,6 +546,46 @@ pub async fn chat_send(
 
     let _ = ch.send(ChatEvent::Done { usage: usage_val });
     Ok(())
+}
+
+/// Grava o consumo informado pelo engine. Falhas não interrompem o chat.
+fn record_usage(db: &DbState, conversation_id: i64, usage: &Value) {
+    let (Some(provider), Some(model)) = (usage["provider"].as_str(), usage["model"].as_str())
+    else {
+        return;
+    };
+    let tokens = |key: &str| usage[key].as_u64().unwrap_or(0);
+    if let Err(e) = db.record_usage(
+        Some(conversation_id),
+        provider,
+        model,
+        tokens("input_tokens"),
+        tokens("output_tokens"),
+        usage["cost_usd"].as_f64(),
+    ) {
+        eprintln!("[usage] falha ao registrar consumo: {e}");
+    }
+}
+
+// ── Usage ─────────────────────────────────────────────────────────────────
+
+/// `tz_offset_minutes`: minutos a leste de UTC (−180 em Brasília).
+#[tauri::command]
+pub fn usage_summary(
+    db: State<DbState>,
+    tz_offset_minutes: Option<i32>,
+) -> Result<UsageSummary, String> {
+    let offset = tz_offset_minutes.unwrap_or(0).clamp(-14 * 60, 14 * 60);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs() as i64;
+    db.usage_summary(now, offset).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn usage_set_limits(db: State<DbState>, limits: UsageLimits) -> Result<(), String> {
+    db.save_usage_limits(&limits)
 }
 
 // ── Projects ──────────────────────────────────────────────────────────────

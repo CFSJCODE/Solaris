@@ -4,6 +4,7 @@ mod engine;
 mod folder_commands;
 mod knowledge;
 mod project_memory;
+mod usage;
 mod workspace;
 
 use std::path::PathBuf;
@@ -99,6 +100,8 @@ pub fn run() {
             folder_commands::folder_read,
             folder_commands::folder_edits,
             folder_commands::folder_edit_decide,
+            commands::usage_summary,
+            commands::usage_set_limits,
         ])
         .build(tauri::generate_context!())
         .expect("error building tauri application")

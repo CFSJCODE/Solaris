@@ -265,6 +265,7 @@ fn migrate(conn: &Connection) -> Result<()> {
     }
     crate::knowledge::migrate(conn)?;
     crate::workspace::migrate(conn)?;
+    crate::usage::migrate(conn)?;
     Ok(())
 }
 
