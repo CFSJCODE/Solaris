@@ -85,6 +85,16 @@ Naquele ponto, a correção ainda não tinha sido empacotada. A atualização 0.
 - App reaberto: janela e dois processos do engine em execução (um com ~499 MB). A verificação pós-instalação aprovou integridade SQLite, contagens preservadas e Markdown inalterados.
 - **Pendente:** a conferência visual (fundo escuro original sem textura, navegação como lâmina de vidro, luz seguindo o ponteiro) e as capturas não foram feitas, porque o acesso de controle à janela foi negado de novo.
 
+## Atualização 0.5.10 instalada — 01/11/2026
+
+- Conteúdo: correção do vinco diagonal no vidro da navegação (#38, main em `181322b`), sobre a 0.5.9. Branch de release `release/0.5.10`.
+- Antes do empacotamento: `test:design` (18), `test:annotations` (5), `test:diff` (3) e build do frontend aprovados. Python e Rust não foram reexecutados, porque só o frontend mudou desde a 0.5.9.
+- Instalador `Solaris_0.5.10_x64_en-US.msi`: 326.512.640 bytes (311,39 MiB). SHA-256 do MSI: `146D08C9FF75CB58F6428229D2DA36CE539F23C7717FC5C25CC2F0037754F7A3`. Logs em `storage/release-0.5.10/`.
+- Snapshot consistente pré-instalação: `%APPDATA%\com.cfsjcode.solaris\backups\antes-0.5.10-20261101-000127-f462e113\manifest.json`.
+- Windows Installer elevado retornou 0; `solaris.exe` informa 0.5.10. Engine instalado com SHA-256 idêntico ao compilado: `A5CEEC36AC77A968281B78E2991F9533AFE67DCAFE8480DD97D55A4CC6B8C352`. A verificação pós-instalação aprovou integridade SQLite, contagens preservadas e Markdown inalterados.
+- Fechamento: o app não estava aberto antes da instalação, então o teste foi feito depois, na 0.5.10. Aberta há 25 s, a janela fechou com o pedido normal (`CloseMainWindow`) e o engine saiu sem órfãos; o Log de Aplicativos não tem falha do Solaris nas últimas 24 h. A falha de fechamento vista na janela da 0.5.8 não se repetiu, mas o teste não cobre uma janela aberta há muito tempo.
+- **Pendente:** a conferência visual da navegação sem a faixa diagonal e as capturas não foram feitas, porque o acesso de controle à janela foi negado. Não afirmar a correção como validada na janela nativa; ela só tem cobertura de `test:design`.
+
 ## Referências de compatibilidade
 
 [Documentação oficial YOLO26](https://docs.ultralytics.com/models/yolo26) e [exportação Ultralytics](https://docs.ultralytics.com/modes/export). A compatibilidade desta entrega foi verificada na versão local 8.4.194, com pesos e dependências existentes, sem atualização indiscriminada de bibliotecas.

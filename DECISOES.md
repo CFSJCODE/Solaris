@@ -1,4 +1,4 @@
-> **Estado vigente — 01/11/2026: SOLARIS 0.5.9 instalada** (Liquid Glass/Fluent UI 2 com WebGL e luz dinâmica, fundo sem textura, pastas locais, métricas de uso e memória persistente reforçada; validação visual nativa pendente). Desde a 0.5.3: vocabulário contextual ampliado e admissão de treino sem mínimo de RAM. Consulte [AGENTS.md](AGENTS.md), [ciclo atual](docs/aprendizado-autonomo.md) e [validação da entrega](docs/entrega-0.5.0.md). Registros de versões anteriores abaixo são históricos. Não há melhora real de precisão comprovada no ambiente do usuário.
+> **Estado vigente — 01/11/2026: SOLARIS 0.5.10 instalada** (Liquid Glass/Fluent UI 2 com WebGL e luz dinâmica, fundo sem textura, correção do vinco diagonal, pastas locais, métricas de uso e memória persistente reforçada; validação visual nativa pendente). Desde a 0.5.3: vocabulário contextual ampliado e admissão de treino sem mínimo de RAM. Consulte [AGENTS.md](AGENTS.md), [ciclo atual](docs/aprendizado-autonomo.md) e [validação da entrega](docs/entrega-0.5.0.md). Registros de versões anteriores abaixo são históricos. Não há melhora real de precisão comprovada no ambiente do usuário.
 
 # Decisões do SOLARIS
 
@@ -116,3 +116,7 @@ O responsável rejeitou o fundo ondulado ("ficou horrível e eu não pedi isso")
 ## 01/11/2026 — Release 0.5.9 instalada
 
 Versão 0.5.8 → 0.5.9, com a confirmação do responsável para instalar a atualização. A release reúne #31, #33, #34, #35 e #36. Testes de frontend, 64 Python e 20 Rust aprovados; o MSI foi instalado depois de um backup verificável. O engine instalado é idêntico ao compilado, e bancos e Markdown foram preservados. A janela anterior não atendeu ao fechamento e foi encerrada à força depois do backup. A conferência visual nativa segue pendente: o acesso de controle à janela foi negado. Detalhes em `docs/entrega-0.5.0.md`, seção "Atualização 0.5.9 instalada".
+
+## 01/11/2026 — Release 0.5.10 instalada
+
+Versão 0.5.9 → 0.5.10, com a aprovação do responsável, para entregar a correção do vinco diagonal no vidro da navegação (#38). Testes de frontend aprovados; o MSI foi instalado depois de um backup verificável. O engine instalado é idêntico ao compilado, e bancos e Markdown foram preservados. O fechamento normal funcionou em teste na 0.5.10, com a janela aberta há 25 s; a falha vista na janela da 0.5.8 não se repetiu. A conferência visual nativa segue pendente: o acesso de controle à janela foi negado. Detalhes em `docs/entrega-0.5.0.md`, seção "Atualização 0.5.10 instalada".
