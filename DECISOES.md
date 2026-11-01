@@ -90,6 +90,13 @@ Diretriz do responsável: modernizar materiais, profundidade, iluminação e mov
 
 Complemento (01/11/2026): `--sol-accent` passa a ser alias de `--sol-gold`, por decisão do responsável ("manter as cores originais"). O vidro foi reforçado após a avaliação de que parecia "apenas degradê": lente por Snell (n = 1,5), especular de contorno, tom multiplicativo no fundo com tinta menor, e navegação como lâmina flutuante refrativa.
 
+Limitações resolvidas (01/11/2026, a pedido do responsável): cena WebGL2 com GLSL próprio desenha o fundo
+e a lâmina de navegação com refração em toda a superfície, dispersão por canal, Fresnel e especular que
+segue ponteiro ou giroscópio; lente SVG passou a cúpula inteira; barras fixas de vidro também em
+Projetos; molas físicas em runtime para deformação ao pressionar. Shader sem cores próprias (tokens via
+uniforms) e contraste testado no pior caso. WebGPU avaliado e não adotado. Detalhes no §11 do documento
+de design.
+
 ## 01/11/2026 — Release 0.5.8 instalada
 
 Versão 0.5.7 → 0.5.8 para entregar o Liquid Glass + Fluent UI 2 (PR #30) aprovado pelo responsável. MSI gerado por `scripts/build.ps1` e instalado com backup verificável antes; engine instalado idêntico ao compilado, bancos e Markdown preservados. A conferência visual na janela nativa e a medição de CPU/GPU na rolagem ficaram pendentes porque o acesso de controle à janela foi negado nesta sessão. Detalhes em `docs/entrega-0.5.0.md`, seção "Atualização 0.5.8 instalada".

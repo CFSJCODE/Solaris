@@ -4,6 +4,13 @@ import { readFileSync } from "node:fs"
 import { SPRINGS, springOvershoot, springSettleTime, springToLinear } from "../src/design/spring.ts"
 import { buildLensPixels, rimSlope, roundedRectSdf } from "../src/design/lensMap.ts"
 import { resolveTier } from "../src/design/materialTier.ts"
+import { ELASTIC, SpringValue } from "../src/design/springAnimator.ts"
+import { lightAngle } from "../src/design/lightField.ts"
+import {
+  FRAGMENT_SHADER,
+  PLATEAU_SPECULAR_MAX,
+  SCENE_WEIGHTS,
+} from "../src/design/webgl/glassShader.ts"
 
 const css = (p) => readFileSync(new URL(p, import.meta.url), "utf8")
 const solaris = css("../src/styles/solaris.css")
@@ -163,5 +170,85 @@ test("topbar reaches AA for normal text once content scrolls beneath it", () => 
 test("dark text on accent fills meets AA (Nova conversa, enviar, primário)", () => {
   for (const c of ["#ea6113", "#f88f22", "#fbb931", "#ffe3b3"]) {
     assert.ok(ratio(hex("#0b0d12"), hex(c)) >= 4.5, c)
+  }
+})
+
+// ── 9. Runtime spring, dynamic light and WebGL glass ─────────────────────
+const runSpring = (dt, seconds) => {
+  const s = new SpringValue(1, ELASTIC)
+  s.target = 0
+  let min = 1
+  const trace = []
+  for (let i = 0, n = Math.round(seconds / dt); i < n; i++) {
+    s.step(dt)
+    min = Math.min(min, s.value)
+    trace.push(s.value)
+  }
+  return { s, min, trace }
+}
+
+test("elastic spring rebounds once, settles and is frame-rate independent", () => {
+  const { s, min } = runSpring(1 / 60, 1.2)
+  assert.equal(s.value, 0, "settled at the target")
+  assert.ok(min < -0.02 && min > -0.12, `single visible overshoot (${min})`)
+  const a = runSpring(1 / 30, 0.2).s.value
+  const b = runSpring(1 / 150, 0.2).s.value
+  assert.ok(Math.abs(a - b) < 0.01, `30 fps vs 150 fps (${a} vs ${b})`)
+})
+
+test("spring keeps its velocity when the target changes mid-flight", () => {
+  const s = new SpringValue(0, ELASTIC)
+  s.target = 1
+  for (let i = 0; i < 4; i++) s.step(1 / 60)
+  const v = s.velocity
+  s.target = 0
+  assert.equal(s.velocity, v)
+  assert.ok(s.step(1 / 60))
+})
+
+test("specular angle points from the surface toward the light", () => {
+  // The light rests at (0, 0) outside the browser.
+  assert.equal(Math.round(lightAngle({ left: -10, top: 90, width: 20, height: 20 })), 0) // below
+  assert.equal(Math.round(lightAngle({ left: -110, top: -10, width: 20, height: 20 })), 90) // left
+  assert.equal(Math.round(lightAngle({ left: 90, top: -10, width: 20, height: 20 })), 270) // right
+})
+
+test("WebGL shader takes every colour from uniforms (no colours of its own)", () => {
+  for (const u of ["uBg", "uEmber", "uFlare", "uGold", "uGlow", "uTint"]) {
+    assert.match(FRAGMENT_SHADER, new RegExp(`uniform vec3 ${u};`))
+  }
+  // Only direction/position vectors may be literal vec3s.
+  const literals = [...FRAGMENT_SHADER.matchAll(/vec3\(([^()]*)\)/g)].map((m) => m[1].trim())
+  for (const l of literals) {
+    assert.ok(/^0\.0, 0\.0, -?1\.0$|^p, 0\.0$|^-hx/.test(l), `literal vec3(${l})`)
+  }
+})
+
+test("text on WebGL glass keeps AA contrast over the brightest scene", () => {
+  const percent = (name, theme) =>
+    Number([...liquid[0].matchAll(new RegExp(`${name}:\\s*([\\d.]+)%?;`, "g"))][theme][1])
+  for (const [theme, base, texts, gainTheme] of [
+    [0, "#0b0d12", ["#f9f8f6", "#c1c4cb"], 0],
+    [1, "#fffcf8", ["#20170f", "#625e59"], 1],
+  ]) {
+    const gain = theme ? percent("--sol-scene-gain", 1) : percent("--sol-scene-gain", 0)
+    // Upper bound: every light field at its peak at the same pixel.
+    let scene = hex(base)
+    scene = mix(hex("#ea6113"), scene, SCENE_WEIGHTS.ember * gain)
+    scene = mix(hex("#fbb931"), scene, SCENE_WEIGHTS.gold * gain)
+    scene = mix(hex("#f88f22"), scene, SCENE_WEIGHTS.flare * gain)
+    const specular = theme ? hex(base) : hex("#ffe3b3")
+    scene = mix(specular, scene, SCENE_WEIGHTS.silk * gain)
+    const tone = percent("--sol-glass-tone-webgl", theme)
+    const tint = theme ? hex("#fffcf8") : hex("#11141b")
+    let glass = mix(
+      tint,
+      scene.map((v) => v * tone),
+      percent("--sol-glass-mix-webgl", theme) / 100,
+    )
+    glass = glass.map((v, i) => Math.min(255, v + specular[i] * PLATEAU_SPECULAR_MAX))
+    for (const t of texts) {
+      assert.ok(ratio(hex(t), glass) >= 4.5, `theme ${theme}: ${t} → ${ratio(hex(t), glass)}`)
+    }
   }
 })

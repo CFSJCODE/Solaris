@@ -31,6 +31,16 @@
   --sol-glass-tone: 0.5;
   /* Com tom 0,5, 40 % de tinta mantém texto secundário ≥ 4,5:1 sobre #FFE3B3. */
   --sol-glass-mix-refract: 40%;
+  /* Vidro WebGL (GlassBackdrop): mesma tinta do vidro refrativo; intensidade
+     dos campos de luz da cena L0 (cores originais, sem cores novas). */
+  /* A cena WebGL é conhecida (só cores da paleta, brilho máximo limitado),
+     então o vidro WebGL precisa de menos tom/tinta para o mesmo contraste
+     (verificado em tests/design.test.mjs). */
+  --sol-glass-mix-webgl: 22%;
+  --sol-glass-tone-webgl: 0.8;
+  --sol-scene-gain: 1;
+  /* Ângulo atual da luz para o especular dinâmico (lightField.ts). */
+  --sol-light-rot: 330deg;
   --sol-glass-saturate: 1.5;
   --sol-glass-mix-regular: 40%;
   --sol-glass-mix-clear: 24%;
@@ -167,6 +177,9 @@
   --sol-glass-mix-acrylic: 94%;
   --sol-glass-mix-scrolled: 92%;
   --sol-glass-mix-refract: 88%;
+  --sol-glass-mix-webgl: 50%;
+  --sol-glass-tone-webgl: 1;
+  --sol-scene-gain: 0.8;
   --sol-glass-tone: 1;
   --sol-specular: var(--sol-bg);
   --sol-specular-rim: 80%;

@@ -85,11 +85,24 @@
     saturate(var(--sol-glass-saturate));
 }
 
-/* Especular de contorno: máscara calculada pela normal da borda (lensMap.ts),
-   colorida com o token existente --sol-specular. Substitui o aro em gradiente. */
+/* Especular de contorno dinâmico: máscara omnidirecional calculada pela
+   normal da borda (lensMap.ts), colorida por um gradiente cônico do token
+   --sol-specular que gira com a luz (ponteiro ou giroscópio, lightField.ts):
+   arco principal voltado para a luz, reflexo interno fraco do lado oposto. */
 .sol-glass--mapped::before {
   padding: 0;
-  background: var(--sol-specular);
+  background: conic-gradient(
+    from var(--sol-light-rot),
+    var(--sol-specular) 0deg,
+    color-mix(in srgb, var(--sol-specular) 35%, transparent) 55deg,
+    transparent 95deg,
+    transparent 150deg,
+    color-mix(in srgb, var(--sol-specular) 40%, transparent) 180deg,
+    transparent 210deg,
+    transparent 265deg,
+    color-mix(in srgb, var(--sol-specular) 35%, transparent) 305deg,
+    var(--sol-specular) 360deg
+  );
   opacity: var(--sol-specular-strength);
   -webkit-mask: var(--sol-specular-map) 0 0 / 100% 100% no-repeat;
   -webkit-mask-composite: source-over;
@@ -155,6 +168,33 @@
   height: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+/* ── L0 + L2 · Cena WebGL2 (GlassBackdrop) ────────────────────────────────
+   O canvas desenha os campos de luz e as lâminas registradas (refração em
+   toda a superfície, dispersão, Fresnel e especular que segue a luz). A
+   superfície DOM fica transparente e conserva apenas o contorno hairline. */
+.sol-scene {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+}
+/* html mantém --sol-bg; body e Mica ficam transparentes para revelar o canvas. */
+[data-scene="webgl"] body,
+[data-scene="webgl"] .sol-mica {
+  background: transparent;
+}
+[data-scene="webgl"] .sol-glass--webgl {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-scene="webgl"] .sol-glass--webgl::before,
+[data-scene="webgl"] .sol-glass--webgl::after {
+  display: none;
 }
 
 /* ── L3 · Smoke ────────────────────────────────────────────────────────── */

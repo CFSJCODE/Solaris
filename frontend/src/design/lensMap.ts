@@ -151,17 +151,20 @@ export function buildLensPixels(
  *   back  = max(0, −N·L)^2      dimmer internal reflection on the far side
  * attenuated by depth into the glass (a crisp ~1.5 px line plus a soft
  * 6 px glow), which gives the edge a sense of thickness.
+ *
+ * With `light = null` the mask is uniform along the contour (key = 1) and the
+ * direction comes from the live light instead (conic gradient, materials.css).
  */
 export function buildSpecularPixels(
   geometry: LensGeometry,
-  light: { x: number; y: number } = { x: -0.45, y: -0.89 },
+  light: { x: number; y: number } | null = { x: -0.45, y: -0.89 },
 ): { width: number; height: number; data: Uint8ClampedArray<ArrayBuffer> } {
   const w = Math.max(2, Math.round(geometry.width))
   const h = Math.max(2, Math.round(geometry.height))
   const data = new Uint8ClampedArray(new ArrayBuffer(w * h * 4))
-  const lLen = Math.hypot(light.x, light.y) || 1
-  const lx = light.x / lLen
-  const ly = light.y / lLen
+  const lLen = light ? Math.hypot(light.x, light.y) || 1 : 1
+  const lx = light ? light.x / lLen : 0
+  const ly = light ? light.y / lLen : 0
   const e = 0.5
   for (let j = 0; j < h; j++) {
     for (let i = 0; i < w; i++) {
@@ -173,8 +176,10 @@ export function buildSpecularPixels(
       const gy = roundedRectSdf(x, y + e, geometry) - roundedRectSdf(x, y - e, geometry)
       const len = Math.hypot(gx, gy) || 1
       const ndl = (gx / len) * lx + (gy / len) * ly
-      const key = Math.pow(Math.max(0, ndl), 1.5)
-      const back = 0.45 * Math.pow(Math.max(0, -ndl), 2)
+      // light = null: omnidirectional mask; direction is applied in CSS by a
+      // conic gradient that rotates with the live light (lightField.ts).
+      const key = light ? Math.pow(Math.max(0, ndl), 1.5) : 1
+      const back = light ? 0.45 * Math.pow(Math.max(0, -ndl), 2) : 0
       const depth = -d
       const line = Math.max(0, 1 - Math.abs(depth - 0.75) / 1.25) // ~1.5 px crisp rim
       const glow = depth < 7 ? 0.28 * (1 - depth / 7) ** 2 : 0
@@ -225,7 +230,12 @@ export function lensMapDataUrl(geometry: LensGeometry): string | null {
   return toDataUrl(`lens:${geometryKey(geometry)}`, () => buildLensPixels(geometry, scale))
 }
 
-/** PNG data URL of the specular contour mask; LRU-memoised by geometry. */
+/** PNG data URL of the (omnidirectional) specular contour mask; LRU-memoised by geometry. */
 export function specularMapDataUrl(geometry: LensGeometry): string | null {
-  return toDataUrl(`spec:${geometryKey(geometry)}`, () => buildSpecularPixels(geometry))
+  return toDataUrl(`spec:${geometryKey(geometry)}`, () => buildSpecularPixels(geometry, null))
+}
+
+/** Full-surface lens: the dome spans half the short side (not a fixed rim). */
+export function domeBezel(width: number, height: number): number {
+  return Math.max(12, Math.min(width, height) / 2)
 }
