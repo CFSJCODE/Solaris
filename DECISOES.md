@@ -1,4 +1,4 @@
-> **Estado vigente — 31/10/2026: SOLARIS 0.5.3 instalada.** Vocabulário contextual ampliado e admissão de treino sem mínimo de RAM. Consulte [AGENTS.md](AGENTS.md), [ciclo atual](docs/aprendizado-autonomo.md) e [validação da entrega](docs/entrega-0.5.0.md). Registros de versões anteriores abaixo são históricos. Não há melhora real de precisão comprovada no ambiente do usuário.
+> **Estado vigente — 01/11/2026: SOLARIS 0.5.8 instalada** (Liquid Glass + Fluent UI 2, paleta preservada; validação visual nativa pendente). Desde a 0.5.3: vocabulário contextual ampliado e admissão de treino sem mínimo de RAM. Consulte [AGENTS.md](AGENTS.md), [ciclo atual](docs/aprendizado-autonomo.md) e [validação da entrega](docs/entrega-0.5.0.md). Registros de versões anteriores abaixo são históricos. Não há melhora real de precisão comprovada no ambiente do usuário.
 
 # Decisões do SOLARIS
 
@@ -96,3 +96,7 @@ segue ponteiro ou giroscópio; lente SVG passou a cúpula inteira; barras fixas 
 Projetos; molas físicas em runtime para deformação ao pressionar. Shader sem cores próprias (tokens via
 uniforms) e contraste testado no pior caso. WebGPU avaliado e não adotado. Detalhes no §11 do documento
 de design.
+
+## 01/11/2026 — Release 0.5.8 instalada
+
+Versão 0.5.7 → 0.5.8 para entregar o Liquid Glass + Fluent UI 2 (PR #30) aprovado pelo responsável. MSI gerado por `scripts/build.ps1` e instalado com backup verificável antes; engine instalado idêntico ao compilado, bancos e Markdown preservados. A conferência visual na janela nativa e a medição de CPU/GPU na rolagem ficaram pendentes porque o acesso de controle à janela foi negado nesta sessão. Detalhes em `docs/entrega-0.5.0.md`, seção "Atualização 0.5.8 instalada".

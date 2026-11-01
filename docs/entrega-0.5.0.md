@@ -65,6 +65,16 @@ Naquele ponto, a correção ainda não tinha sido empacotada. A atualização 0.
 - A admissão não exige mais um mínimo de RAM; CPU abaixo de 85% e disco livre acima de 8 GB continuam limitando o início. A pausa cooperativa em menos de 3 GB durante o treino foi mantida. Após reabrir, o worker iniciou treino YOLO26x abaixo do antigo limiar de 6 GB e avançava no lote 39/69 na última checagem. A candidata segue em treinamento; não afirmar avaliação ou ativação concluída.
 - O vocabulário OWLv2 contextual ampliado também foi incluído no pacote. Testes: 43 Python aprovados; build frontend e MSI concluídos. Sem alegação de melhora de precisão.
 
+## Atualização 0.5.8 instalada — 01/11/2026
+
+- Conteúdo: interface Liquid Glass + Fluent UI 2 com paleta preservada (PR #30, merge `f9ca152`), sobre a 0.5.7 instalada. Branch de release `release/0.5.8`.
+- Antes do empacotamento: `test:design` (11), `test:annotations` (5) e build do frontend aprovados. Python e Rust não foram reexecutados nesta release, porque só a interface mudou.
+- Instalador `Solaris_0.5.8_x64_en-US.msi`: 326.352.896 bytes (311,23 MiB). SHA-256 do MSI: `E29BF81814F2D5F672AF897923E156F33D420D8F1F9D8332C932175948617BF5`. Log do build e do Windows Installer em `storage/release-0.5.8/`.
+- Windows Installer elevado retornou 0; `C:\Program Files\Solaris\solaris.exe` informa 0.5.8. Engine instalado com SHA-256 idêntico ao compilado: `F91B1B173571E0D487F9D0C40E760BED136B9AAE1DF4301AF6C9855721B54DE6`.
+- Snapshot consistente pré-instalação: `%APPDATA%\com.cfsjcode.solaris\backups\antes-0.5.8-20261031-213148-4bd61d95\manifest.json`. A verificação pós-instalação aprovou integridade SQLite, contagens de conversas/aprendizado preservadas e Markdown inalterados.
+- Aplicativo reaberto; janela e dois processos do engine em execução (um com ~527 MB residentes, compatível com o YOLO26x pré-carregado).
+- **Pendente:** a validação visual na janela (refração da topbar/composer na rolagem, barra lateral como lâmina, troca Vidro líquido → Sólido) e a medição de CPU/GPU na rolagem não foram feitas: o acesso de controle à janela foi negado nesta sessão. Não afirmar o efeito visual como validado na janela nativa.
+
 ## Referências de compatibilidade
 
 [Documentação oficial YOLO26](https://docs.ultralytics.com/models/yolo26) e [exportação Ultralytics](https://docs.ultralytics.com/modes/export). A compatibilidade desta entrega foi verificada na versão local 8.4.194, com pesos e dependências existentes, sem atualização indiscriminada de bibliotecas.
